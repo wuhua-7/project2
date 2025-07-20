@@ -39,7 +39,7 @@ app.use(cors({
 app.options('*', cors());
 
 const server = http.createServer(app);
-const io = new Server(server, {
+const io = new Server(httpsServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
