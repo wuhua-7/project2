@@ -1,0 +1,35 @@
+button, .button-secondary {
+  background: #b0b6be;
+  color: #222;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  transition: box-shadow 0.22s cubic-bezier(.4,0,.2,1), transform 0.22s cubic-bezier(.4,0,.2,1), background 0.18s, color 0.18s;
+  box-shadow: 0 1px 2px #0001;
+  will-change: transform, box-shadow;
+}
+button:hover, button:focus, .button-secondary:hover, .button-secondary:focus {
+  background: #8a99b3;
+  color: #fff;
+  box-shadow: 0 4px 16px #2196f355;
+  transform: scale(1.04);
+}
+button:active, .button-secondary:active {
+  background: #5c6a82;
+  color: #fff;
+  box-shadow: 0 2px 8px #2196f333;
+  transform: scale(0.98);
+}
+
+.menu-anim {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: menu-fade-in 200ms cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes menu-fade-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

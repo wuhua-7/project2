@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "web": "expo start --web --port 19006",
+    "dev": "cd backend && npm run dev",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd apps/web-pure && npm start"
+  },
+  "dependencies": {
+    "selfsigned": "^2.4.1",
+    "socket.io-client": "^4.8.1"
+  }
+}

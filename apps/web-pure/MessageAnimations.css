@@ -1,0 +1,49 @@
+.msg-anim-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.msg-anim-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+.msg-anim-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.msg-anim-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* 編輯高亮 */
+.msg-anim-edit {
+  animation: msg-edit-highlight 1s;
+}
+@keyframes msg-edit-highlight {
+  0% { background: #ffe082; }
+  100% { background: inherit; }
+}
+
+.voice-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  height: 18px;
+  margin-right: 4px;
+}
+.voice-wave .bar {
+  width: 3px;
+  margin: 0 1px;
+  border-radius: 2px;
+  background: #1976d2;
+  display: inline-block;
+  animation: wave 1s infinite;
+}
+.voice-wave .bar1 { height: 10px; animation-delay: 0s; }
+.voice-wave .bar2 { height: 16px; animation-delay: 0.2s; }
+.voice-wave .bar3 { height: 8px; animation-delay: 0.4s; }
+@keyframes wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.8); }
+} 
