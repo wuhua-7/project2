@@ -354,7 +354,6 @@ const credentials = { key: privateKey, cert: certificate };
 const httpsServer = https.createServer(credentials, app);
 
 // Socket.IO 必須掛在 httpsServer 上
-const { Server } = require('socket.io');
 const io = new Server(httpsServer, {
   cors: {
     origin: '*', // 可根據需要調整
