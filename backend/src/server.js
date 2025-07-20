@@ -39,13 +39,6 @@ app.use(cors({
 app.options('*', cors());
 
 const server = http.createServer(app);
-const io = new Server(httpsServer, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
-});
-
 // 將 io 實例設置為應用程式屬性，讓路由可以訪問
 app.set('io', io);
 
