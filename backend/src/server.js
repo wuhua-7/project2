@@ -334,6 +334,4 @@ mongoose.connect(process.env.MONGODB_URI)
 // const httpServer = http.createServer(app);
 // httpServer.listen(3000, () => {
 //   console.log('HTTP Server running on http://localhost:3000');
-// });
-
-module.exports = { sendExpoPush }; 
+// }); 
