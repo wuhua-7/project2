@@ -37,6 +37,3 @@ yarn-error.*
 *.tsbuildinfo
 
 uploads/
-
-server.key
-server.cert

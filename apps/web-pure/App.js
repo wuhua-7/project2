@@ -7,7 +7,7 @@ import './MessageAnimations.css';
 import AvatarEditor from 'react-avatar-editor';
 
 // const API_URL = 'http://localhost:3001';
-const API_URL = 'http://192.168.1.121:3001'; // 請將此 IP 換成你自己的區網 IP
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function formatTime(ts) {
   const d = new Date(ts);
