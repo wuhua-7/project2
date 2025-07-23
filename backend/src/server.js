@@ -16,27 +16,14 @@ const fs = require('fs');
 const https = require('https');
 const { execSync } = require('child_process');
 
-if (!fs.existsSync('server.key') || !fs.existsSync('server.cert')) {
-  try {
-    execSync("openssl req -nodes -new -x509 -keyout server.key -out server.cert -subj '/CN=localhost' -days 365");
-    console.log('自動產生 server.key 和 server.cert');
-  } catch (e) {
-    console.error('產生憑證失敗，請確認 openssl 已安裝於系統環境');
-    process.exit(1);
-  }
-}
-
-const privateKey = fs.readFileSync('server.key', 'utf8');
-const certificate = fs.readFileSync('server.cert', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
+// 移除 https、fs、credentials、server.key/server.cert 相關程式碼
 
 const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:19006',
-  'http://localhost:8081', // 新增 web 端口
-  'http://192.168.1.121:8081', // 區網前端
-  // 可根據實際部署增加正式網域
+  'http://localhost:8081',
+  'http://192.168.1.121:8081',
 ];
 app.use(cors({
   origin: function(origin, callback) {
@@ -50,7 +37,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// 允許所有 OPTIONS 預檢請求
 app.options('*', cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -58,8 +44,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
 
-const httpsServer = https.createServer(credentials, app);
-const io = new Server(httpsServer, {
+const server = http.createServer(app);
+const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
@@ -320,15 +306,16 @@ const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
-    httpsServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`HTTPS Server running on https://0.0.0.0:${PORT}`);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`HTTP Server running on http://0.0.0.0:${PORT}`);
       console.log('Listening on 0.0.0.0:' + PORT);
     });
   })
   .catch(err => {
     console.error('MongoDB connection error:', err);
-    httpsServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`HTTPS Server running on https://localhost:${PORT} (MongoDB 連線失敗)`);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`HTTP Server running on http://0.0.0.0:${PORT} (MongoDB 連線失敗)`);
+      console.log('Listening on 0.0.0.0:' + PORT);
     });
   });
 
