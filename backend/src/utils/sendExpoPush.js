@@ -1,8 +1,10 @@
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-const PushLog = require('../models/PushLog');
-const User = require('../models/User');
 
 async function sendExpoPush(to, title, body, data = {}) {
+  // 動態 require，避免 circular dependency
+  const PushLog = require('../models/PushLog');
+  const User = require('../models/User');
+
   let status = 'success', error = '';
   let userId = data.userId || null;
   try {
