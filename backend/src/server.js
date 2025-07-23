@@ -39,8 +39,6 @@ app.use(cors({
 app.options('*', cors());
 
 const server = http.createServer(app);
-// 將 io 實例設置為應用程式屬性，讓路由可以訪問
-app.set('io', io);
 
 app.use(express.json());
 
@@ -54,6 +52,22 @@ app.use('/api/group', groupRouter);
 mongoose.connect('mongodb://localhost:27017/chatapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+});
+
+// 讀取本地自簽憑證
+const privateKey = fs.readFileSync('server.key', 'utf8');
+const certificate = fs.readFileSync('server.cert', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// 啟動 HTTPS 伺服器
+const httpsServer = https.createServer(credentials, app);
+
+// Socket.IO 必須掛在 httpsServer 上
+const io = new Server(httpsServer, {
+  cors: {
+    origin: '*', // 可根據需要調整
+    methods: ['GET', 'POST']
+  }
 });
 
 // 只允許登入用戶連線 Socket.IO
@@ -338,22 +352,6 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-// 讀取本地自簽憑證
-const privateKey = fs.readFileSync('server.key', 'utf8');
-const certificate = fs.readFileSync('server.cert', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
-
-// 啟動 HTTPS 伺服器
-const httpsServer = https.createServer(credentials, app);
-
-// Socket.IO 必須掛在 httpsServer 上
-const io = new Server(httpsServer, {
-  cors: {
-    origin: '*', // 可根據需要調整
-    methods: ['GET', 'POST']
-  }
-});
-
 httpsServer.listen(3001, () => {
   console.log('HTTPS Server running on https://localhost:3001 (或 https://你的區網IP:3001)');
 });
