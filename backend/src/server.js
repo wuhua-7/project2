@@ -354,7 +354,7 @@ const io = new Server(httpsServer, {
 // 將 io 實例設置為應用程式屬性，讓路由可以訪問
 app.set('io', io);
 
-httpsServer.listen(PORT, () => {
+httpsServer.listen(PORT, '0.0.0.0', () => {
   console.log(`HTTPS Server running on https://localhost:${PORT} (或 https://你的區網IP:${PORT})`);
 });
 
