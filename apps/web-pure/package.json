@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "web-https": "expo start --web --https --key ../server.key --cert ../server.cert",
-    "build": "expo build:web"
+    "build": "npx expo export:web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
