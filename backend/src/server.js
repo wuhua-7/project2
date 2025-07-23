@@ -64,10 +64,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
 
-mongoose.connect('mongodb://localhost:27017/chatapp', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI);
 
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const User = require('./models/User');
