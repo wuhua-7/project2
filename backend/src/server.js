@@ -64,10 +64,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
 
-mongoose.connect('mongodb://localhost:27017/chatapp', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI + 'chatapp');
 
 // 啟動 HTTPS 伺服器
 const httpsServer = https.createServer(credentials, app);
