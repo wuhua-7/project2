@@ -54,19 +54,6 @@ mongoose.connect('mongodb://localhost:27017/chatapp', {
   useUnifiedTopology: true,
 });
 
-// 只允許登入用戶連線 Socket.IO
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('未授權'));
-  try {
-    const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'secretkey');
-    socket.user = payload;
-    next();
-  } catch {
-    next(new Error('JWT 驗證失敗'));
-  }
-});
-
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const User = require('./models/User');
 
@@ -96,6 +83,29 @@ async function sendExpoPush(to, title, body, data = {}) {
   }
   await PushLog.create({ userId, type: data.type || '', title, body, data, status, error });
 }
+
+// Socket.IO 必須掛在 httpsServer 上
+const io = new Server(httpsServer, {
+  cors: {
+    origin: '*', // 可根據需要調整
+    methods: ['GET', 'POST']
+  }
+});
+// 將 io 實例設置為應用程式屬性，讓路由可以訪問
+app.set('io', io);
+
+// 只允許登入用戶連線 Socket.IO
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('未授權'));
+  try {
+    const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'secretkey');
+    socket.user = payload;
+    next();
+  } catch {
+    next(new Error('JWT 驗證失敗'));
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
@@ -343,16 +353,6 @@ const credentials = { key: privateKey, cert: certificate };
 
 // 啟動 HTTPS 伺服器
 const httpsServer = https.createServer(credentials, app);
-
-// Socket.IO 必須掛在 httpsServer 上
-const io = new Server(httpsServer, {
-  cors: {
-    origin: '*', // 可根據需要調整
-    methods: ['GET', 'POST']
-  }
-});
-// 將 io 實例設置為應用程式屬性，讓路由可以訪問
-app.set('io', io);
 
 httpsServer.listen(PORT, '0.0.0.0', () => {
   console.log(`HTTPS Server running on https://localhost:${PORT} (或 https://你的區網IP:${PORT})`);
