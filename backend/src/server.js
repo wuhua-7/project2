@@ -14,6 +14,21 @@ const PushLog = require('./models/PushLog');
 const Message = require('./models/Message');
 const fs = require('fs');
 const https = require('https');
+const { execSync } = require('child_process');
+
+if (!fs.existsSync('server.key') || !fs.existsSync('server.cert')) {
+  try {
+    execSync("openssl req -nodes -new -x509 -keyout server.key -out server.cert -subj '/CN=localhost' -days 365");
+    console.log('自動產生 server.key 和 server.cert');
+  } catch (e) {
+    console.error('產生憑證失敗，請確認 openssl 已安裝於系統環境');
+    process.exit(1);
+  }
+}
+
+const privateKey = fs.readFileSync('server.key', 'utf8');
+const certificate = fs.readFileSync('server.cert', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
 const allowedOrigins = [
@@ -53,11 +68,6 @@ mongoose.connect('mongodb://localhost:27017/chatapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
-
-// 讀取本地自簽憑證
-const privateKey = fs.readFileSync('server.key', 'utf8');
-const certificate = fs.readFileSync('server.cert', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
 
 // 啟動 HTTPS 伺服器
 const httpsServer = https.createServer(credentials, app);

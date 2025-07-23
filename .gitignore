@@ -15,7 +15,7 @@ expo-env.d.ts
 *.jks
 *.p8
 *.p12
-*.key
+# *.key  # 註解這行，允許 server.key 被追蹤
 *.mobileprovision
 
 # Metro
@@ -37,3 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 uploads/
+
+!server.key
+!server.cert
