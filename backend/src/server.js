@@ -15,6 +15,7 @@ const Message = require('./models/Message');
 const fs = require('fs');
 const https = require('https');
 const { execSync } = require('child_process');
+const sendExpoPush = require('./utils/sendExpoPush');
 
 if (!fs.existsSync('server.key') || !fs.existsSync('server.cert')) {
   try {
