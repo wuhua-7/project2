@@ -321,7 +321,8 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
     httpsServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`HTTPS Server running on https://localhost:${PORT}`);
+      console.log(`HTTPS Server running on https://0.0.0.0:${PORT}`);
+      console.log('Listening on 0.0.0.0:' + PORT);
     });
   })
   .catch(err => {
