@@ -1,9 +1,7 @@
 {
   "scripts": {
-    "web": "expo start --web --port 19006",
-    "dev": "cd backend && npm run dev",
-    "backend": "cd backend && npm run dev",
-    "frontend": "cd apps/web-pure && npm start"
+    "prestart": "openssl req -nodes -new -x509 -keyout server.key -out server.cert -subj '/CN=localhost' -days 365 || true",
+    "start": "node src/server.js"
   },
   "dependencies": {
     "selfsigned": "^2.4.1",
