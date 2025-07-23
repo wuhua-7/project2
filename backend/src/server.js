@@ -14,22 +14,6 @@ const PushLog = require('./models/PushLog');
 const Message = require('./models/Message');
 const fs = require('fs');
 const https = require('https');
-const { execSync } = require('child_process');
-const sendExpoPush = require('./utils/sendExpoPush');
-
-if (!fs.existsSync('server.key') || !fs.existsSync('server.cert')) {
-  try {
-    execSync("openssl req -nodes -new -x509 -keyout server.key -out server.cert -subj '/CN=localhost' -days 365");
-    console.log('自動產生 server.key 和 server.cert');
-  } catch (e) {
-    console.error('產生憑證失敗，請確認 openssl 已安裝於系統環境');
-    process.exit(1);
-  }
-}
-
-const privateKey = fs.readFileSync('server.key', 'utf8');
-const certificate = fs.readFileSync('server.cert', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
 
 const app = express();
 const allowedOrigins = [
@@ -65,17 +49,9 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
 
-mongoose.connect(process.env.MONGODB_URI + 'chatapp');
-
-// 啟動 HTTPS 伺服器
-const httpsServer = https.createServer(credentials, app);
-
-// Socket.IO 必須掛在 httpsServer 上
-const io = new Server(httpsServer, {
-  cors: {
-    origin: '*', // 可根據需要調整
-    methods: ['GET', 'POST']
-  }
+mongoose.connect('mongodb://localhost:27017/chatapp', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
 // 只允許登入用戶連線 Socket.IO
@@ -90,6 +66,36 @@ io.use((socket, next) => {
     next(new Error('JWT 驗證失敗'));
   }
 });
+
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const User = require('./models/User');
+
+async function sendExpoPush(to, title, body, data = {}) {
+  let status = 'success', error = '';
+  let userId = data.userId || null;
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, title, body, data })
+    });
+    const result = await res.json();
+    if (result.data && result.data.status === 'error') {
+      status = 'fail';
+      error = result.data.message || '';
+    }
+  } catch (e) {
+    status = 'fail';
+    error = e.message;
+  }
+  // 嘗試自動查 userId
+  if (!userId) {
+    const User = require('./models/User');
+    const u = await User.findOne({ expoPushToken: to });
+    if (u) userId = u._id;
+  }
+  await PushLog.create({ userId, type: data.type || '', title, body, data, status, error });
+}
 
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
@@ -330,8 +336,26 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-httpsServer.listen(3001, () => {
-  console.log('HTTPS Server running on https://localhost:3001 (或 https://你的區網IP:3001)');
+// 讀取本地自簽憑證
+const privateKey = fs.readFileSync('server.key', 'utf8');
+const certificate = fs.readFileSync('server.cert', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// 啟動 HTTPS 伺服器
+const httpsServer = https.createServer(credentials, app);
+
+// Socket.IO 必須掛在 httpsServer 上
+const io = new Server(httpsServer, {
+  cors: {
+    origin: '*', // 可根據需要調整
+    methods: ['GET', 'POST']
+  }
+});
+// 將 io 實例設置為應用程式屬性，讓路由可以訪問
+app.set('io', io);
+
+httpsServer.listen(PORT, () => {
+  console.log(`HTTPS Server running on https://localhost:${PORT} (或 https://你的區網IP:${PORT})`);
 });
 
 // // 如需同時啟動 HTTP 伺服器，可保留以下註解
