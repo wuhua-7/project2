@@ -84,7 +84,14 @@ async function sendExpoPush(to, title, body, data = {}) {
   await PushLog.create({ userId, type: data.type || '', title, body, data, status, error });
 }
 
-// Socket.IO 必須掛在 httpsServer 上
+// 讀取本地自簽憑證
+const privateKey = fs.readFileSync('server.key', 'utf8');
+const certificate = fs.readFileSync('server.cert', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+// 啟動 HTTPS 伺服器
+const httpsServer = https.createServer(credentials, app);
+
 const io = new Server(httpsServer, {
   cors: {
     origin: '*', // 可根據需要調整
@@ -346,14 +353,6 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-// 讀取本地自簽憑證
-const privateKey = fs.readFileSync('server.key', 'utf8');
-const certificate = fs.readFileSync('server.cert', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
-
-// 啟動 HTTPS 伺服器
-const httpsServer = https.createServer(credentials, app);
-
 httpsServer.listen(PORT, '0.0.0.0', () => {
   console.log(`HTTPS Server running on https://localhost:${PORT} (或 https://你的區網IP:${PORT})`);
 });
