@@ -9,7 +9,25 @@ import './MessageAnimations.css';
 import { API_URL } from './config';
 
 // 調試信息 - 強制清除緩存
-console.log('App.js 載入 (v3.0)，API_URL:', API_URL);
+console.log('App.js 載入 (v4.0)，API_URL:', API_URL);
+
+// 強制清除任何可能的 localhost 緩存
+if (typeof window !== 'undefined') {
+  // 清除所有可能的 API URL 緩存
+  const keysToRemove = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key && key.toLowerCase().includes('api')) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => window.localStorage.removeItem(key));
+  
+  // 清除 sessionStorage
+  window.sessionStorage.clear();
+  
+  console.log('已清除所有 API 相關緩存');
+}
 
 function formatTime(ts) {
   const d = new Date(ts);

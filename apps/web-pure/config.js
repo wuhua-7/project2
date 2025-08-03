@@ -1,8 +1,31 @@
-// API 配置 - 強制使用雲端後端 (v3.0) - 強制清除緩存
+// API 配置 - 強制使用雲端後端 (v5.0) - 終極緩存清除
 const getApiUrl = () => {
   // 強制使用雲端後端，忽略環境變量
-  console.log('使用雲端後端 URL:', 'https://project2-g1cl.onrender.com');
-  return 'https://project2-g1cl.onrender.com';
+  const apiUrl = 'https://project2-g1cl.onrender.com';
+  console.log('使用雲端後端 URL:', apiUrl);
+  
+  // 終極緩存清除
+  if (typeof window !== 'undefined') {
+    // 清除所有可能的 API URL 緩存
+    const keysToRemove = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && (key.toLowerCase().includes('api') || key.toLowerCase().includes('localhost'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => window.localStorage.removeItem(key));
+    
+    // 清除 sessionStorage
+    window.sessionStorage.clear();
+    
+    // 強制清除任何可能的 localhost 引用
+    if (window.location.href.includes('localhost')) {
+      console.warn('檢測到 localhost URL，強制重定向到雲端');
+    }
+  }
+  
+  return apiUrl;
 };
 
 export const API_URL = getApiUrl();
