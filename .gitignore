@@ -36,7 +36,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-uploads/
+# uploads/
 
 !server.key
 !server.cert
