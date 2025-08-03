@@ -1961,23 +1961,52 @@ function App() {
                                         currentPlaying: playingVoiceId 
                                       });
                                     const audioUrl = API_URL + msg.url;
+                                    console.log('嘗試播放語音:', audioUrl);
                                     try {
                                         if (!audioRefs.current[msg._id]) {
-                                          audioRefs.current[msg._id] = new Audio(audioUrl);
-                                      } else {
-                                          audioRefs.current[msg._id].src = audioUrl;
-                                      }
-                                        console.log('設置 playingVoiceId 為:', msg._id);
-                                      setPlayingVoiceId(msg._id);
+                                          audioRefs.current[msg._id] = new Audio();
+                                        }
+                                        
+                                        // 設置音頻屬性
+                                        audioRefs.current[msg._id].src = audioUrl;
+                                        audioRefs.current[msg._id].preload = 'metadata';
+                                        
+                                        // 添加錯誤處理
+                                        audioRefs.current[msg._id].onerror = (e) => {
+                                          console.error('音頻載入失敗:', e);
+                                          setPlayingVoiceId(null);
+                                          alert('無法載入語音文件，請檢查網絡連接或文件格式');
+                                        };
+                                        
                                         audioRefs.current[msg._id].onended = () => {
                                           console.log('語音播放結束，重置 playingVoiceId');
                                           setPlayingVoiceId(null);
                                         };
-                                        await audioRefs.current[msg._id].play();
+                                        
+                                        console.log('設置 playingVoiceId 為:', msg._id);
+                                        setPlayingVoiceId(msg._id);
+                                        
+                                        // 等待音頻載入完成後播放
+                                        audioRefs.current[msg._id].oncanplaythrough = async () => {
+                                          try {
+                                            await audioRefs.current[msg._id].play();
+                                            console.log('語音播放成功');
+                                          } catch (playError) {
+                                            console.error('播放失敗:', playError);
+                                            setPlayingVoiceId(null);
+                                            alert('無法播放語音：' + (playError.message || playError));
+                                          }
+                                        };
+                                        
+                                        // 如果音頻已經載入完成，直接播放
+                                        if (audioRefs.current[msg._id].readyState >= 2) {
+                                          await audioRefs.current[msg._id].play();
+                                          console.log('語音播放成功');
+                                        }
                                     } catch (e) {
                                         console.log('播放失敗，重置 playingVoiceId');
-                                      setPlayingVoiceId(null);
-                                      alert('無法播放語音：' + (e.message || e));
+                                        setPlayingVoiceId(null);
+                                        alert('無法播放語音：' + (e.message || e));
                                     }
                                   }}
                                   style={{ position: 'relative' }}

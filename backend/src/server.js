@@ -220,12 +220,29 @@ app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req
   if (!req.file) return res.status(400).json({ error: '未收到語音檔案' });
   const { groupId, optimisticId } = req.body; // 新增 optimisticId
   if (!groupId) return res.status(400).json({ error: '缺少群組ID' });
+  
+  // 確保語音文件有正確的副檔名
+  const filename = req.file.filename;
+  const filenameWithExt = filename.includes('.') ? filename : filename + '.webm';
+  
+  // 如果原文件名沒有副檔名，重命名文件
+  if (!filename.includes('.')) {
+    const oldPath = path.join(__dirname, '..', 'uploads', filename);
+    const newPath = path.join(__dirname, '..', 'uploads', filenameWithExt);
+    try {
+      fs.renameSync(oldPath, newPath);
+      console.log('重命名語音文件:', filename, '->', filenameWithExt);
+    } catch (error) {
+      console.error('重命名語音文件失敗:', error);
+    }
+  }
+  
   const Message = require('./models/Message');
   const msg = new Message({
     group: groupId,
     sender: req.user.id,
     type: 'voice',
-    url: `/uploads/${req.file.filename}`,
+    url: `/uploads/${filenameWithExt}`,
     optimisticId // 儲存 optimisticId
   });
   await msg.save();
