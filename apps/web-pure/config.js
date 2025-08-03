@@ -1,4 +1,4 @@
-// API 配置 - 強制使用雲端後端 (v2.0)
+// API 配置 - 強制使用雲端後端 (v3.0) - 強制清除緩存
 const getApiUrl = () => {
   // 強制使用雲端後端，忽略環境變量
   console.log('使用雲端後端 URL:', 'https://project2-g1cl.onrender.com');

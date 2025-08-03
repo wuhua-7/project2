@@ -8,8 +8,8 @@ import 'react-image-crop/dist/ReactCrop.css';
 import './MessageAnimations.css';
 import { API_URL } from './config';
 
-// 調試信息
-console.log('App.js 載入，API_URL:', API_URL);
+// 調試信息 - 強制清除緩存
+console.log('App.js 載入 (v3.0)，API_URL:', API_URL);
 
 function formatTime(ts) {
   const d = new Date(ts);
