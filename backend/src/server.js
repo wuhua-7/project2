@@ -7,7 +7,28 @@ const authRouter = require('./routes/auth');
 const authMiddleware = require('./middleware/auth');
 const multer = require('multer');
 const path = require('path');
-const upload = multer({ dest: path.join(__dirname, '../uploads') });
+// 配置 multer 以支持文件副檔名
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../uploads');
+    // 確保目錄存在
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // 根據 MIME 類型添加副檔名
+    const ext = file.mimetype.split('/')[1];
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1E9);
+    const filename = `${timestamp}-${random}.${ext}`;
+    console.log('生成文件名:', filename, 'MIME類型:', file.mimetype);
+    cb(null, filename);
+  }
+});
+
+const upload = multer({ storage });
 const userRouter = require('./routes/user');
 const groupRouter = require('./routes/group');
 const PushLog = require('./models/PushLog');
@@ -221,28 +242,19 @@ app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req
   const { groupId, optimisticId } = req.body; // 新增 optimisticId
   if (!groupId) return res.status(400).json({ error: '缺少群組ID' });
   
-  // 確保語音文件有正確的副檔名
-  const filename = req.file.filename;
-  const filenameWithExt = filename.includes('.') ? filename : filename + '.webm';
-  
-  // 如果原文件名沒有副檔名，重命名文件
-  if (!filename.includes('.')) {
-    const oldPath = path.join(__dirname, '..', 'uploads', filename);
-    const newPath = path.join(__dirname, '..', 'uploads', filenameWithExt);
-    try {
-      fs.renameSync(oldPath, newPath);
-      console.log('重命名語音文件:', filename, '->', filenameWithExt);
-    } catch (error) {
-      console.error('重命名語音文件失敗:', error);
-    }
-  }
+  console.log('語音文件信息:', {
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size
+  });
   
   const Message = require('./models/Message');
   const msg = new Message({
     group: groupId,
     sender: req.user.id,
     type: 'voice',
-    url: `/uploads/${filenameWithExt}`,
+    url: `/uploads/${req.file.filename}`,
     optimisticId // 儲存 optimisticId
   });
   await msg.save();
@@ -264,33 +276,20 @@ app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req
   const { groupId, type, optimisticId } = req.body; // 新增 optimisticId
   if (!groupId || !type) return res.status(400).json({ error: '缺少群組ID或型別' });
   
-  // 確保媒體文件有正確的副檔名
-  const filename = req.file.filename;
-  let filenameWithExt = filename;
-  
-  // 根據文件類型添加副檔名
-  if (!filename.includes('.')) {
-    const ext = req.file.mimetype.split('/')[1];
-    if (ext) {
-      filenameWithExt = filename + '.' + ext;
-      // 重命名文件
-      const oldPath = path.join(__dirname, '..', 'uploads', filename);
-      const newPath = path.join(__dirname, '..', 'uploads', filenameWithExt);
-      try {
-        fs.renameSync(oldPath, newPath);
-        console.log('重命名媒體文件:', filename, '->', filenameWithExt);
-      } catch (error) {
-        console.error('重命名媒體文件失敗:', error);
-      }
-    }
-  }
+  console.log('媒體文件信息:', {
+    filename: req.file.filename,
+    originalname: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size,
+    type: type
+  });
   
   const Message = require('./models/Message');
   const msg = new Message({
     group: groupId,
     sender: req.user.id,
     type,
-    url: `/uploads/${filenameWithExt}`,
+    url: `/uploads/${req.file.filename}`,
     filename: req.file.originalname, // 保留原始檔名（含副檔名）
     size: req.file.size, // 新增
     mimetype: req.file.mimetype, // 新增
