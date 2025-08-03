@@ -3,6 +3,8 @@ import io from 'socket.io-client';
 import MediaWall from './components/MediaWall';
 import FileCabinet from './components/FileCabinet';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import './MessageAnimations.css';
 import { API_URL } from './config';
 
@@ -229,7 +231,14 @@ function App() {
   const [profile, setProfile] = useState({ username: '', email: '', avatar: '', createdAt: '' });
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [editorScale, setEditorScale] = useState(1);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [crop, setCrop] = useState({
+    unit: '%',
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0
+  });
   const [avatarSuccess, setAvatarSuccess] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -1286,6 +1295,7 @@ function App() {
         await fetchGroups(token);
         setAvatarFile(null);
         setAvatarPreview(null);
+        setShowCropModal(false);
         setAvatarSuccess(true);
         setTimeout(() => setAvatarSuccess(false), 2000);
       } else {
@@ -1295,6 +1305,42 @@ function App() {
       console.error('上傳頭像失敗:', error);
       alert('上傳失敗');
     }
+  };
+
+  const handleCropComplete = async () => {
+    if (!avatarFile || !avatarPreview) return;
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      
+      ctx.drawImage(
+        img,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+      );
+      
+      canvas.toBlob((blob) => {
+        const croppedFile = new File([blob], avatarFile.name, { type: avatarFile.type });
+        setAvatarFile(croppedFile);
+        setShowCropModal(false);
+      }, 'image/jpeg', 0.9);
+    };
+    
+    img.src = avatarPreview;
   };
 
   // 修改 Email
@@ -2255,13 +2301,14 @@ function App() {
                 <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像 ({avatarFile.name})</button>
               )}
               {!avatarFile && (
-                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件 (avatarFile: {avatarFile ? '已設置' : '未設置'})</div>
+                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件</div>
               )}
               <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files && e.target.files[0];
                 if (file) {
                   setAvatarFile(file);
                   setAvatarPreview(URL.createObjectURL(file));
+                  setShowCropModal(true);
                   // 允許重複選同一張圖也能觸發 onChange
                   e.target.value = '';
                 }
@@ -2288,6 +2335,29 @@ function App() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* 頭像裁切模態框 */}
+      {showCropModal && avatarPreview && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 24, maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}>
+            <button onClick={() => setShowCropModal(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', zIndex: 1 }}>✕</button>
+            <h3 style={{ marginBottom: 16 }}>裁切頭像</h3>
+            <div style={{ marginBottom: 16 }}>
+              <ReactCrop
+                crop={crop}
+                onChange={c => setCrop(c)}
+                aspect={1}
+                circularCrop
+              >
+                <img src={avatarPreview} alt="裁切預覽" style={{ maxWidth: '100%', maxHeight: '60vh' }} />
+              </ReactCrop>
+            </div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button onClick={() => setShowCropModal(false)} style={{ padding: '8px 16px', background: '#f5f5f5', border: 'none', borderRadius: 4, cursor: 'pointer' }}>取消</button>
+              <button onClick={handleCropComplete} style={{ padding: '8px 16px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>確認裁切</button>
+            </div>
           </div>
         </div>
       )}
