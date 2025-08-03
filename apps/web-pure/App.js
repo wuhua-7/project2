@@ -2279,9 +2279,10 @@ function App() {
           <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{profile.username}</span>
         </button>
       )}
-      {/* 會員中心 Modal */}
+            {/* 會員中心 Modal */}
       {showProfile && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0008', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {console.log('會員中心顯示 - profile:', profile, 'avatar:', profile.avatar)}
           <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 360, position: 'relative' }}>
             <button onClick={() => setShowProfile(false)} style={{ position: 'absolute', top: 16, right: 16, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
             <h2>會員中心</h2>
@@ -2329,7 +2330,13 @@ function App() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
-              <img src={profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
+              <img 
+                src={profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} 
+                alt="頭像" 
+                style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }}
+                onLoad={() => console.log('頭像載入成功:', profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg')}
+                onError={(e) => console.error('頭像載入失敗:', e.target.src, 'profile.avatar:', profile.avatar)}
+              />
               <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
                 <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
