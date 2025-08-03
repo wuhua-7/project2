@@ -25,15 +25,35 @@ const allowedOrigins = [
   'http://localhost:8081',
   'http://192.168.1.121:8081',
   // 添加云端部署的前端域名
-  'https://*.vercel.app',
-  'https://*.onrender.com',
-  'https://project2-omega-seven.vercel.app', // 您的实际前端域名
+  'https://project2-omega-seven.vercel.app',
+  'https://project2-git-main-wuhuas-projects-4ddccece.vercel.app',
+  'https://project2-f2okuex16-wuhuas-projects-4ddccece.vercel.app',
+  'https://project2-n065eapgt-wuhuas-projects-4ddccece.vercel.app',
+  // 允許所有 vercel.app 域名
+  /^https:\/\/.*\.vercel\.app$/,
+  /^https:\/\/.*\.onrender\.com$/,
 ];
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    
+    // 檢查是否在允許的域名列表中
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
