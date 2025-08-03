@@ -1919,12 +1919,23 @@ function App() {
                           ) : (
                             <>
                               {msg.type === 'image' && msg.url ? (
-                                  <img
-                                    src={msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url}
-                                    alt="圖片"
-                                    style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, marginBottom: 4, cursor: 'pointer', display: 'block', objectFit: 'cover' }}
-                                    onClick={() => setMediaPreview({ type: 'image', url: msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url })}
-                                  />
+                                  <div>
+                                    <img
+                                      src={msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url}
+                                      alt="圖片"
+                                      style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, marginBottom: 4, cursor: 'pointer', display: 'block', objectFit: 'cover' }}
+                                      onClick={() => setMediaPreview({ type: 'image', url: msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url })}
+                                      onError={(e) => {
+                                        console.error('圖片載入失敗:', e.target.src);
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'block';
+                                      }}
+                                    />
+                                    <div style={{ display: 'none', padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#666' }}>
+                                      <span>圖片載入失敗</span>
+                                      <button onClick={() => window.open(API_URL + msg.url, '_blank')} style={{ marginLeft: 8, padding: '2px 6px', fontSize: 10, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>在新視窗開啟</button>
+                                    </div>
+                                  </div>
                               ) : msg.type === 'video' && msg.url ? (
                                   <div style={{ position: 'relative', width: 220, height: 180, borderRadius: 8, overflow: 'hidden', background: '#000' }}>
                                     <video
@@ -1933,6 +1944,16 @@ function App() {
                                       poster={msg.poster || ''}
                                       controls
                                       preload="metadata"
+                                      onError={(e) => {
+                                        console.error('視頻載入失敗:', e.target.src);
+                                        e.target.style.display = 'none';
+                                        e.target.parentNode.innerHTML = `
+                                          <div style="padding: 20px; text-align: center; color: #fff;">
+                                            <div>視頻載入失敗</div>
+                                            <button onclick="window.open('${API_URL + msg.url}', '_blank')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: #2196f3; color: #fff; border: none; border-radius: 4px; cursor: pointer;">在新視窗開啟</button>
+                                          </div>
+                                        `;
+                                      }}
                                     />
                                   </div>
                               ) : msg.type === 'file' && msg.url ? (

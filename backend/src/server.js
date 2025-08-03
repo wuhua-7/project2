@@ -263,12 +263,34 @@ app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req
   if (!req.file) return res.status(400).json({ error: '未收到檔案' });
   const { groupId, type, optimisticId } = req.body; // 新增 optimisticId
   if (!groupId || !type) return res.status(400).json({ error: '缺少群組ID或型別' });
+  
+  // 確保媒體文件有正確的副檔名
+  const filename = req.file.filename;
+  let filenameWithExt = filename;
+  
+  // 根據文件類型添加副檔名
+  if (!filename.includes('.')) {
+    const ext = req.file.mimetype.split('/')[1];
+    if (ext) {
+      filenameWithExt = filename + '.' + ext;
+      // 重命名文件
+      const oldPath = path.join(__dirname, '..', 'uploads', filename);
+      const newPath = path.join(__dirname, '..', 'uploads', filenameWithExt);
+      try {
+        fs.renameSync(oldPath, newPath);
+        console.log('重命名媒體文件:', filename, '->', filenameWithExt);
+      } catch (error) {
+        console.error('重命名媒體文件失敗:', error);
+      }
+    }
+  }
+  
   const Message = require('./models/Message');
   const msg = new Message({
     group: groupId,
     sender: req.user.id,
     type,
-    url: `/uploads/${req.file.filename}`,
+    url: `/uploads/${filenameWithExt}`,
     filename: req.file.originalname, // 保留原始檔名（含副檔名）
     size: req.file.size, // 新增
     mimetype: req.file.mimetype, // 新增
