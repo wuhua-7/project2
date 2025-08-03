@@ -88,11 +88,11 @@ function renderContentWithMention(content, username, group) {
 // 新增：取得用戶頭像
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
-    return profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
+    return profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
-    if (user && user.avatar) return API_URL + user.avatar;
+    if (user && user.avatar && user.avatar !== '') return API_URL + user.avatar;
   }
   return API_URL + '/uploads/2.jpeg';
 }
@@ -2329,7 +2329,7 @@ function App() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
-              <img src={profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
+              <img src={profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
               <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
                 <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
