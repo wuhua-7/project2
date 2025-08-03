@@ -272,17 +272,37 @@ app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req
 
 // 多媒體訊息上傳 API
 app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: '未收到檔案' });
+  console.log('收到媒體上傳請求:', req.body);
+  console.log('文件信息:', req.file);
+  
+  if (!req.file) {
+    console.error('未收到文件');
+    return res.status(400).json({ error: '未收到檔案' });
+  }
+  
   const { groupId, type, optimisticId } = req.body; // 新增 optimisticId
-  if (!groupId || !type) return res.status(400).json({ error: '缺少群組ID或型別' });
+  if (!groupId || !type) {
+    console.error('缺少必要參數:', { groupId, type });
+    return res.status(400).json({ error: '缺少群組ID或型別' });
+  }
   
   console.log('媒體文件信息:', {
     filename: req.file.filename,
     originalname: req.file.originalname,
     mimetype: req.file.mimetype,
     size: req.file.size,
-    type: type
+    type: type,
+    path: req.file.path
   });
+  
+  // 檢查文件是否成功保存
+  const filePath = req.file.path;
+  if (!fs.existsSync(filePath)) {
+    console.error('文件保存失敗，文件不存在:', filePath);
+    return res.status(500).json({ error: '文件保存失敗' });
+  }
+  
+  console.log('文件成功保存到:', filePath);
   
   const Message = require('./models/Message');
   const msg = new Message({
