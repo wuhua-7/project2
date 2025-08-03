@@ -112,7 +112,20 @@ function renderAvatar(username, groupInfo, profile, isMe = false) {
   };
 
   if (avatarUrl) {
-    return <img src={avatarUrl} alt="頭像" style={avatarStyle} />;
+    return (
+      <img 
+        src={avatarUrl} 
+        alt="頭像" 
+        style={avatarStyle}
+        onError={(e) => {
+          // 如果載入失敗，自動切換到預設頭像
+          if (e.target.src !== API_URL + '/uploads/2.jpeg') {
+            console.log('聊天頭像載入失敗，切換到預設頭像:', e.target.src);
+            e.target.src = API_URL + '/uploads/2.jpeg';
+          }
+        }}
+      />
+    );
   } else {
     // 顯示用戶名首字母作為頭像
     const initial = username ? username.charAt(0).toUpperCase() : '?';
@@ -2335,7 +2348,14 @@ function App() {
                 alt="頭像" 
                 style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }}
                 onLoad={() => console.log('頭像載入成功:', profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg')}
-                onError={(e) => console.error('頭像載入失敗:', e.target.src, 'profile.avatar:', profile.avatar)}
+                onError={(e) => {
+                  console.error('頭像載入失敗:', e.target.src, 'profile.avatar:', profile.avatar);
+                  // 如果載入失敗，自動切換到預設頭像
+                  if (e.target.src !== API_URL + '/uploads/2.jpeg') {
+                    console.log('自動切換到預設頭像');
+                    e.target.src = API_URL + '/uploads/2.jpeg';
+                  }
+                }}
               />
               <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
