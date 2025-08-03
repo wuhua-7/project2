@@ -1,11 +1,6 @@
 // API 配置 - 強制使用雲端後端
 const getApiUrl = () => {
-  // 优先使用环境变量
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // 強制使用雲端後端，即使在開發環境
+  // 強制使用雲端後端，忽略環境變量
   return 'https://project2-g1cl.onrender.com';
 };
 
