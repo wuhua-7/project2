@@ -356,6 +356,18 @@ app.get('/api/download/:messageId', async (req, res) => {
   res.download(filePath, filename);
 });
 
+// 測試文件上傳功能
+app.get('/test-upload', (req, res) => {
+  const uploadDir = path.join(__dirname, '../uploads');
+  const files = fs.readdirSync(uploadDir);
+  res.json({
+    message: 'Upload test endpoint',
+    uploadDir: uploadDir,
+    fileCount: files.length,
+    files: files.slice(0, 10) // 只顯示前10個文件
+  });
+});
+
 // 其他 API 路由、靜態檔案、首頁
 app.get('/', (req, res) => {
   res.send('Chat server is running!');
