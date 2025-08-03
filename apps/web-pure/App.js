@@ -208,8 +208,6 @@ function App() {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [editorScale, setEditorScale] = useState(1);
-  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
-  const avatarEditorRef = useRef();
   const [avatarSuccess, setAvatarSuccess] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -1247,11 +1245,10 @@ function App() {
   }, [page, token]);
   // 上傳頭像
   const handleAvatarUpload = async () => {
-    if (!avatarEditorRef.current) return;
-    const canvas = avatarEditorRef.current.getImageScaledToCanvas();
-    canvas.toBlob(async (blob) => {
-      const formData = new FormData();
-      formData.append('avatar', blob, 'avatar.png');
+    if (!avatarFile) return;
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    try {
       const res = await fetch(`${API_URL}/api/user/avatar`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -1265,16 +1262,17 @@ function App() {
         }
         // 刷新群組列表以更新成員頭像
         await fetchGroups(token);
-        setShowAvatarEditor(false);
         setAvatarFile(null);
         setAvatarPreview(null);
-        setEditorScale(1);
         setAvatarSuccess(true);
         setTimeout(() => setAvatarSuccess(false), 2000);
       } else {
         alert('上傳失敗');
       }
-    }, 'image/png');
+    } catch (error) {
+      console.error('上傳頭像失敗:', error);
+      alert('上傳失敗');
+    }
   };
 
   // 修改 Email
@@ -2178,7 +2176,8 @@ function App() {
                 if (file) {
                   setAvatarFile(file);
                   setAvatarPreview(URL.createObjectURL(file));
-                  setShowAvatarEditor(true);
+                  // 直接上傳，不需要裁剪
+                  handleAvatarUpload();
                   // 允許重複選同一張圖也能觸發 onChange
                   e.target.value = '';
                 }
@@ -2204,33 +2203,7 @@ function App() {
                 )}
               </div>
             </div>
-            {/* 裁剪頭像 Modal */}
-            {showAvatarEditor && (
-              <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0008', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ background: '#fff', borderRadius: 12, padding: 24, minWidth: 340, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <button onClick={() => { setShowAvatarEditor(false); setAvatarFile(null); setAvatarPreview(null); setEditorScale(1); }} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-                  <h3>裁剪頭像</h3>
-                  <div style={{ background: '#bdbdbd', borderRadius: 16, padding: 8, border: '2px solid #fff', display: 'inline-block', marginBottom: 16 }}>
-                    <AvatarEditor
-                      ref={avatarEditorRef}
-                      image={avatarPreview}
-                      width={200}
-                      height={200}
-                      border={40}
-                      borderRadius={100}
-                      color={[200, 200, 200, 0.72]}
-                      scale={editorScale}
-                      rotate={0}
-                    />
-                  </div>
-                  <input type="range" min={1} max={2.5} step={0.01} value={editorScale} onChange={e => setEditorScale(Number(e.target.value))} style={{ width: 200, margin: '16px 0' }} />
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={() => { setShowAvatarEditor(false); setAvatarFile(null); setAvatarPreview(null); setEditorScale(1); }}>取消</button>
-                    <button className="button-primary" onClick={handleAvatarUpload}>裁剪並上傳</button>
-                  </div>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       )}
