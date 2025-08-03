@@ -1288,6 +1288,7 @@ function App() {
 
   // 取得個人資料
   const fetchProfile = async () => {
+    console.log('開始獲取用戶資料...');
     const res = await fetch(`${API_URL}/api/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.status === 401) {
       alert('登入已過期，請重新登入');
@@ -1299,11 +1300,30 @@ function App() {
     }
     if (res.ok) {
       const data = await res.json();
+      console.log('獲取到用戶資料:', data);
       setProfile(data);
+      // 將用戶資料保存到 localStorage 以備緩存
+      localStorage.setItem('userProfile', JSON.stringify(data));
+    } else {
+      console.error('獲取用戶資料失敗:', res.status, res.statusText);
     }
   };
   useEffect(() => {
-    if (page === 'chat' && token) fetchProfile();
+    if (page === 'chat' && token) {
+      // 先嘗試從 localStorage 讀取緩存的用戶資料
+      const cachedProfile = localStorage.getItem('userProfile');
+      if (cachedProfile) {
+        try {
+          const profileData = JSON.parse(cachedProfile);
+          console.log('使用緩存的用戶資料:', profileData);
+          setProfile(profileData);
+        } catch (e) {
+          console.error('解析緩存用戶資料失敗:', e);
+        }
+      }
+      // 然後從服務器獲取最新資料
+      fetchProfile();
+    }
   }, [page, token]);
   // 上傳頭像
   const handleAvatarUpload = async () => {
@@ -1933,7 +1953,13 @@ function App() {
                                     />
                                     <div style={{ display: 'none', padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#666' }}>
                                       <span>圖片載入失敗</span>
-                                      <button onClick={() => window.open(API_URL + msg.url, '_blank')} style={{ marginLeft: 8, padding: '2px 6px', fontSize: 10, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>在新視窗開啟</button>
+                                      <button onClick={() => {
+                                        console.log('嘗試在新視窗開啟圖片:', API_URL + msg.url);
+                                        const newWindow = window.open(API_URL + msg.url, '_blank');
+                                        if (!newWindow) {
+                                          alert('無法開啟新視窗，請檢查彈出視窗設定');
+                                        }
+                                      }} style={{ marginLeft: 8, padding: '2px 6px', fontSize: 10, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>在新視窗開啟</button>
                                     </div>
                                   </div>
                               ) : msg.type === 'video' && msg.url ? (
