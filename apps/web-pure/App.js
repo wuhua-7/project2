@@ -1308,20 +1308,36 @@ function App() {
   };
 
   const handleCropComplete = async () => {
-    if (!avatarFile || !avatarPreview) return;
+    console.log('開始裁切處理...');
+    if (!avatarFile || !avatarPreview) {
+      console.log('缺少文件或預覽');
+      return;
+    }
     
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
     img.onload = () => {
-      // 獲取實際的圖片尺寸
-      const imgElement = document.querySelector('.ReactCrop__image');
-      if (!imgElement) return;
+      console.log('圖片載入完成，開始裁切...');
+      console.log('裁切參數:', crop);
+      console.log('圖片尺寸:', img.naturalWidth, 'x', img.naturalHeight);
       
-      const imgRect = imgElement.getBoundingClientRect();
+      // 使用更可靠的方法獲取圖片元素
+      const imgElements = document.querySelectorAll('img');
+      const cropImg = Array.from(imgElements).find(img => img.src === avatarPreview);
+      
+      if (!cropImg) {
+        console.log('找不到裁切圖片元素');
+        return;
+      }
+      
+      const imgRect = cropImg.getBoundingClientRect();
+      console.log('圖片元素尺寸:', imgRect.width, 'x', imgRect.height);
+      
       const scaleX = img.naturalWidth / imgRect.width;
       const scaleY = img.naturalHeight / imgRect.height;
+      console.log('縮放比例:', scaleX, scaleY);
       
       // 設置畫布大小為裁切區域大小
       canvas.width = crop.width;
@@ -1340,15 +1356,23 @@ function App() {
         crop.height
       );
       
+      console.log('裁切完成，轉換為 blob...');
+      
       // 轉換為 blob 並創建新文件
       canvas.toBlob((blob) => {
+        console.log('Blob 創建成功，大小:', blob.size);
         const croppedFile = new File([blob], avatarFile.name, { type: avatarFile.type });
         setAvatarFile(croppedFile);
         // 更新預覽為裁切後的圖片
         const croppedPreview = URL.createObjectURL(blob);
         setAvatarPreview(croppedPreview);
         setShowCropModal(false);
+        console.log('裁切處理完成');
       }, 'image/jpeg', 0.9);
+    };
+    
+    img.onerror = (error) => {
+      console.error('圖片載入失敗:', error);
     };
     
     img.src = avatarPreview;
