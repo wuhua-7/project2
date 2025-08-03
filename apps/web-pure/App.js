@@ -65,13 +65,13 @@ function renderContentWithMention(content, username, group) {
 // 新增：取得用戶頭像
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
-    return profile.avatar ? API_URL + profile.avatar : null;
+    return profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
     if (user && user.avatar) return API_URL + user.avatar;
   }
-  return null;
+  return API_URL + '/uploads/2.jpeg';
 }
 
 // 新增：渲染頭像組件
@@ -88,26 +88,7 @@ function renderAvatar(username, groupInfo, profile, isMe = false) {
     background: '#fff'
   };
 
-  if (avatarUrl) {
-    return <img src={avatarUrl} alt="頭像" style={avatarStyle} />;
-  } else {
-    // 顯示用戶名首字母作為頭像
-    const initial = username ? username.charAt(0).toUpperCase() : '?';
-    return (
-      <div style={{
-        ...avatarStyle,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#666',
-        background: isMe ? '#2196f3' : '#e0e0e0'
-      }}>
-        {initial}
-      </div>
-    );
-  }
+  return <img src={avatarUrl} alt="頭像" style={avatarStyle} />;
 }
 
 // 在App組件外部加：
@@ -1694,32 +1675,12 @@ function App() {
                             >
                               {readByUsers.slice(0, 3).map(user => (
                                 <div key={user._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32 }}>
-                                  {user.avatar ? (
-                                    <img
-                                      src={API_URL + user.avatar}
-                                      alt={user.username}
-                                      title={user.username}
-                                      style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: '1px solid #fff', boxShadow: '0 1px 2px #0001', marginBottom: 2 }}
-                                    />
-                                  ) : (
-                                    <div style={{ 
-                                      width: 22, 
-                                      height: 22, 
-                                      borderRadius: '50%', 
-                                      background: '#e0e0e0',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: 10,
-                                      fontWeight: 'bold',
-                                      color: '#666',
-                                      border: '1px solid #fff', 
-                                      boxShadow: '0 1px 2px #0001', 
-                                      marginBottom: 2 
-                                    }}>
-                                      {user.username ? user.username.charAt(0).toUpperCase() : '?'}
-                                    </div>
-                                  )}
+                                  <img
+                                    src={user.avatar ? API_URL + user.avatar : API_URL + '/uploads/2.jpeg'}
+                                    alt={user.username}
+                                    title={user.username}
+                                    style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: '1px solid #fff', boxShadow: '0 1px 2px #0001', marginBottom: 2 }}
+                                  />
                                   <span style={{ fontSize: 11, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
                         </div>
                               ))}
@@ -1736,26 +1697,7 @@ function App() {
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
                                       {readByUsers.map(user => (
                                         <div key={user._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 56 }}>
-                                          {user.avatar ? (
-                                            <img src={API_URL + user.avatar} alt={user.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginBottom: 4 }} />
-                                          ) : (
-                                            <div style={{ 
-                                              width: 36, 
-                                              height: 36, 
-                                              borderRadius: '50%', 
-                                              background: '#e0e0e0',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center',
-                                              fontSize: 16,
-                                              fontWeight: 'bold',
-                                              color: '#666',
-                                              border: '1px solid #eee', 
-                                              marginBottom: 4 
-                                            }}>
-                                              {user.username ? user.username.charAt(0).toUpperCase() : '?'}
-                                            </div>
-                                          )}
+                                          <img src={user.avatar ? API_URL + user.avatar : API_URL + '/uploads/2.jpeg'} alt={user.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginBottom: 4 }} />
                                           <span style={{ fontSize: 13, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
                                         </div>
                                       ))}
