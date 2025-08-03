@@ -1,16 +1,11 @@
-// API 配置
+// API 配置 - 強制使用雲端後端
 const getApiUrl = () => {
   // 优先使用环境变量
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // 检查是否在开发环境
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3001';
-  }
-  
-  // 生产环境强制使用 Render 后端
+  // 強制使用雲端後端，即使在開發環境
   return 'https://project2-g1cl.onrender.com';
 };
 
