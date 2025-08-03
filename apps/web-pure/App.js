@@ -65,13 +65,49 @@ function renderContentWithMention(content, username, group) {
 // 新增：取得用戶頭像
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
-    return profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
+    return profile.avatar ? API_URL + profile.avatar : null;
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
     if (user && user.avatar) return API_URL + user.avatar;
   }
-  return API_URL + '/uploads/2.jpeg';
+  return null;
+}
+
+// 新增：渲染頭像組件
+function renderAvatar(username, groupInfo, profile, isMe = false) {
+  const avatarUrl = getUserAvatar(username, groupInfo, profile);
+  const avatarStyle = {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    objectFit: 'cover',
+    marginLeft: isMe ? 10 : 0,
+    marginRight: isMe ? 0 : 10,
+    border: isMe ? '1.5px solid #2196f3' : '1.5px solid #bbb',
+    background: '#fff'
+  };
+
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="頭像" style={avatarStyle} />;
+  } else {
+    // 顯示用戶名首字母作為頭像
+    const initial = username ? username.charAt(0).toUpperCase() : '?';
+    return (
+      <div style={{
+        ...avatarStyle,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#666',
+        background: isMe ? '#2196f3' : '#e0e0e0'
+      }}>
+        {initial}
+      </div>
+    );
+  }
 }
 
 // 在App組件外部加：
@@ -1639,12 +1675,7 @@ function App() {
                     >
                       <div ref={messageRefs.current[msg._id]} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', marginBottom: 10 }}>
                         {/* 頭像 */}
-                        {isMe && (
-                          <img src={getUserAvatar(msg.sender, groupInfo, profile)} alt="頭像" style={{ width: 36, height: 36, borderRadius: 18, objectFit: 'cover', marginLeft: 10, border: '1.5px solid #2196f3', background: '#fff' }} />
-                        )}
-                        {!isMe && (
-                          <img src={getUserAvatar(msg.sender, groupInfo, profile)} alt="頭像" style={{ width: 36, height: 36, borderRadius: 18, objectFit: 'cover', marginRight: 10, border: '1.5px solid #bbb', background: '#fff' }} />
-                        )}
+                        {renderAvatar(msg.sender, groupInfo, profile, isMe)}
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
                         <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end' }}>
                           {/* 已讀標籤（泡泡內側） */}
@@ -1663,12 +1694,32 @@ function App() {
                             >
                               {readByUsers.slice(0, 3).map(user => (
                                 <div key={user._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32 }}>
-                                  <img
-                                    src={user.avatar ? API_URL + user.avatar : API_URL + '/uploads/2.jpeg'}
-                                    alt={user.username}
-                                    title={user.username}
-                                    style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: '1px solid #fff', boxShadow: '0 1px 2px #0001', marginBottom: 2 }}
-                                  />
+                                  {user.avatar ? (
+                                    <img
+                                      src={API_URL + user.avatar}
+                                      alt={user.username}
+                                      title={user.username}
+                                      style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', border: '1px solid #fff', boxShadow: '0 1px 2px #0001', marginBottom: 2 }}
+                                    />
+                                  ) : (
+                                    <div style={{ 
+                                      width: 22, 
+                                      height: 22, 
+                                      borderRadius: '50%', 
+                                      background: '#e0e0e0',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 10,
+                                      fontWeight: 'bold',
+                                      color: '#666',
+                                      border: '1px solid #fff', 
+                                      boxShadow: '0 1px 2px #0001', 
+                                      marginBottom: 2 
+                                    }}>
+                                      {user.username ? user.username.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                  )}
                                   <span style={{ fontSize: 11, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
                         </div>
                               ))}
@@ -1685,7 +1736,26 @@ function App() {
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
                                       {readByUsers.map(user => (
                                         <div key={user._id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 56 }}>
-                                          <img src={user.avatar ? API_URL + user.avatar : API_URL + '/uploads/2.jpeg'} alt={user.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginBottom: 4 }} />
+                                          {user.avatar ? (
+                                            <img src={API_URL + user.avatar} alt={user.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginBottom: 4 }} />
+                                          ) : (
+                                            <div style={{ 
+                                              width: 36, 
+                                              height: 36, 
+                                              borderRadius: '50%', 
+                                              background: '#e0e0e0',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              fontSize: 16,
+                                              fontWeight: 'bold',
+                                              color: '#666',
+                                              border: '1px solid #eee', 
+                                              marginBottom: 4 
+                                            }}>
+                                              {user.username ? user.username.charAt(0).toUpperCase() : '?'}
+                                            </div>
+                                          )}
                                           <span style={{ fontSize: 13, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
                                         </div>
                                       ))}
@@ -2105,7 +2175,7 @@ function App() {
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,200,200,0.72)'}
           onMouseLeave={e => e.currentTarget.style.background = 'none'}
         >
-          <img src={getUserAvatar(profile.username, groupInfo, profile)} alt="我的頭像" style={{ width: 36, height: 36, borderRadius: 18, objectFit: 'cover', marginRight: 10, border: '2px solid #2196f3', background: '#fff' }} />
+                        {renderAvatar(profile.username, groupInfo, profile, true)}
           <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{profile.username}</span>
         </button>
       )}
