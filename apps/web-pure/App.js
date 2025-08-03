@@ -2255,7 +2255,7 @@ function App() {
                 <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像 ({avatarFile.name})</button>
               )}
               {!avatarFile && (
-                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件</div>
+                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件 (avatarFile: {avatarFile ? '已設置' : '未設置'})</div>
               )}
               <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files && e.target.files[0];
