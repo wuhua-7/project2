@@ -9,7 +9,7 @@ import './MessageAnimations.css';
 import { API_URL } from './config';
 
 // 調試信息 - 強制清除緩存
-console.log('App.js 載入 (v4.0)，API_URL:', API_URL);
+console.log('App.js 載入 (v5.0)，API_URL:', API_URL);
 
 // 強制清除任何可能的 localhost 緩存
 if (typeof window !== 'undefined') {
@@ -2334,8 +2334,8 @@ function App() {
               {avatarFile && (
                 <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
               )}
-              {!avatarFile && (
-                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件</div>
+              {avatarFile && (
+                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>已選擇文件，請點擊上傳</div>
               )}
               <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files && e.target.files[0];
