@@ -1945,14 +1945,16 @@ function App() {
                                       alt="圖片"
                                       style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, marginBottom: 4, cursor: 'pointer', display: 'block', objectFit: 'cover' }}
                                       onClick={() => setMediaPreview({ type: 'image', url: msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url })}
+                                      onLoad={() => console.log('圖片載入成功:', msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url)}
                                       onError={(e) => {
-                                        console.error('圖片載入失敗:', e.target.src);
+                                        console.error('圖片載入失敗:', e.target.src, '原始URL:', msg.url);
                                         e.target.style.display = 'none';
                                         e.target.nextSibling.style.display = 'block';
                                       }}
                                     />
                                     <div style={{ display: 'none', padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#666' }}>
                                       <span>圖片載入失敗</span>
+                                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>URL: {msg.url}</div>
                                       <button onClick={() => {
                                         console.log('嘗試在新視窗開啟圖片:', API_URL + msg.url);
                                         const newWindow = window.open(API_URL + msg.url, '_blank');
