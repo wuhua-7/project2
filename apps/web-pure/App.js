@@ -2227,15 +2227,35 @@ function App() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
-              <img src={profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
-              <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>更換頭像</button>
+              {profile.avatar ? (
+                <img src={API_URL + profile.avatar} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
+              ) : (
+                <div style={{ 
+                  width: 96, 
+                  height: 96, 
+                  borderRadius: '50%', 
+                  background: '#2196f3',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 36,
+                  fontWeight: 'bold',
+                  color: '#fff',
+                  marginBottom: 8, 
+                  border: '2px solid #2196f3' 
+                }}>
+                  {profile.username ? profile.username.charAt(0).toUpperCase() : '?'}
+                </div>
+              )}
+              <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
+              {avatarFile && (
+                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
+              )}
               <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files && e.target.files[0];
                 if (file) {
                   setAvatarFile(file);
                   setAvatarPreview(URL.createObjectURL(file));
-                  // 直接上傳，不需要裁剪
-                  handleAvatarUpload();
                   // 允許重複選同一張圖也能觸發 onChange
                   e.target.value = '';
                 }
@@ -2274,11 +2294,31 @@ function App() {
             <ul style={{ padding: 0, listStyle: 'none' }}>
               {currentGroupObj.members.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                  <img
-                    src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
-                    alt={u.username}
-                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
-                  />
+                  {u.avatar ? (
+                    <img
+                      src={API_URL + u.avatar}
+                      alt={u.username}
+                      style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      width: 32, 
+                      height: 32, 
+                      borderRadius: '50%', 
+                      background: '#e0e0e0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      fontWeight: 'bold',
+                      color: '#666',
+                      border: '1px solid #bbb', 
+                      background: '#fff', 
+                      marginRight: 8 
+                    }}>
+                      {u.username ? u.username.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
                   <span style={{ fontSize: 15, color: '#222', wordBreak: 'break-all' }}>{u.username}</span>
                 </li>
               ))}
