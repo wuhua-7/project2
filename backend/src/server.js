@@ -24,6 +24,10 @@ const allowedOrigins = [
   'http://localhost:19006',
   'http://localhost:8081',
   'http://192.168.1.121:8081',
+  // 添加云端部署的前端域名
+  'https://*.vercel.app',
+  'https://*.onrender.com',
+  'https://project2-omega-seven.vercel.app', // 您的实际前端域名
 ];
 app.use(cors({
   origin: function(origin, callback) {
@@ -317,11 +321,11 @@ mongoose.connect(process.env.MONGODB_URI)
       console.log(`HTTP Server running on http://0.0.0.0:${PORT} (MongoDB 連線失敗)`);
       console.log('Listening on 0.0.0.0:' + PORT);
     });
-  });
+});
 
 // // 如需同時啟動 HTTP 伺服器，可保留以下註解
 // const http = require('http');
 // const httpServer = http.createServer(app);
 // httpServer.listen(3000, () => {
 //   console.log('HTTP Server running on http://localhost:3000');
-// }); 
+// });

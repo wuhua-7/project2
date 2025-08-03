@@ -4,9 +4,7 @@ import MediaWall from './components/MediaWall';
 import FileCabinet from './components/FileCabinet';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import './MessageAnimations.css';
-
-// const API_URL = 'http://localhost:3001';
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_URL } from './config-prod';
 
 function formatTime(ts) {
   const d = new Date(ts);

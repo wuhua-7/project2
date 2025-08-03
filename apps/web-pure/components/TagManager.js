@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 export default function TagManager({ groupId, token }) {
   const [tags, setTags] = useState([]);

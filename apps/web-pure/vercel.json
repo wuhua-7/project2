@@ -1,0 +1,10 @@
+{
+  "env": {
+    "REACT_APP_API_URL": "https://project2-g1cl.onrender.com"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_API_URL": "https://project2-g1cl.onrender.com"
+    }
+  }
+} 

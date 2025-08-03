@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import TagManager from './TagManager';
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 function formatSize(size) {
   if (!size) return '';

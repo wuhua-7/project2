@@ -8,8 +8,7 @@ import * as Device from 'expo-device';
 import * as jwtDecode from 'jwt-decode';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-
-const API_URL = 'http://localhost:3001'; // 若手機測試請改為電腦區網IP
+import { API_URL } from './config';
 
 function formatTime(ts) {
   const d = new Date(ts);

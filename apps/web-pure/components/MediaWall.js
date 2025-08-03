@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../config';
 
 function highlight(text, keyword) {
   if (!keyword) return text;
