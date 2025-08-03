@@ -80,15 +80,20 @@ router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
     
     console.log('當前用戶頭像:', user.avatar);
     
-    // 刪除舊頭像檔案（如果有且不是2.jpeg）
-    if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
-      const oldPath = path.join(__dirname, '..', user.avatar);
-      console.log('嘗試刪除舊頭像:', oldPath);
-      fs.unlink(oldPath, err => {
-        if (err) console.log('刪除舊頭像失敗', oldPath, err.message);
-        else console.log('成功刪除舊頭像:', oldPath);
-      });
-    }
+         // 刪除舊頭像檔案（如果有且不是2.jpeg）
+     if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
+       const oldPath = path.join(__dirname, '..', user.avatar);
+       console.log('嘗試刪除舊頭像:', oldPath);
+       // 檢查文件是否存在再刪除
+       if (fs.existsSync(oldPath)) {
+         fs.unlink(oldPath, err => {
+           if (err) console.log('刪除舊頭像失敗', oldPath, err.message);
+           else console.log('成功刪除舊頭像:', oldPath);
+         });
+       } else {
+         console.log('舊頭像文件不存在，跳過刪除:', oldPath);
+       }
+     }
     
     user.avatar = `/uploads/${req.file.filename}`;
     await user.save();

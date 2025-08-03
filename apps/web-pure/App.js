@@ -2249,7 +2249,10 @@ function App() {
               )}
               <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
-                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
+                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像 ({avatarFile.name})</button>
+              )}
+              {!avatarFile && (
+                <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件</div>
               )}
               <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files && e.target.files[0];
