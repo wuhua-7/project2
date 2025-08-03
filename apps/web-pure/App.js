@@ -6,6 +6,9 @@ import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import './MessageAnimations.css';
 import { API_URL } from './config';
 
+// 調試信息
+console.log('App.js 載入，API_URL:', API_URL);
+
 function formatTime(ts) {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
