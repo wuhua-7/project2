@@ -8,12 +8,23 @@ const path = require('path');
 const fs = require('fs');
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads'));
+    const uploadDir = path.join(__dirname, '../uploads');
+    console.log('上傳目錄:', uploadDir);
+    
+    // 確保目錄存在
+    if (!fs.existsSync(uploadDir)) {
+      console.log('創建上傳目錄:', uploadDir);
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
     const basename = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, basename + ext);
+    const filename = basename + ext;
+    console.log('生成檔案名:', filename);
+    cb(null, filename);
   }
 });
 const upload = multer({ storage });
@@ -45,44 +56,73 @@ router.post('/push-preferences', auth, async (req, res) => {
 
 // 上傳頭像
 router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
-  console.log('收到頭像上傳請求', req.file);
-  if (!req.file) return res.status(400).json({ error: '未收到頭像檔案' });
-  const user = await User.findById(req.user.id);
-  if (!user) return res.status(404).json({ error: '用戶不存在' });
-  // 刪除舊頭像檔案（如果有且不是2.jpeg）
-  if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
-    const oldPath = path.join(__dirname, '..', user.avatar);
-    fs.unlink(oldPath, err => {
-      if (err) console.log('刪除舊頭像失敗', oldPath, err.message);
-    });
-  }
-  user.avatar = `/uploads/${req.file.filename}`;
-  await user.save();
-  
-  // 發送 WebSocket 通知給所有相關群組成員
   try {
-    const io = req.app.get('io');
-    const Group = require('../models/Group');
+    console.log('收到頭像上傳請求', req.file);
+    console.log('用戶ID:', req.user.id);
     
-    // 找到用戶所在的所有群組
-    const groups = await Group.find({ members: user._id });
+    if (!req.file) {
+      console.log('未收到頭像檔案');
+      return res.status(400).json({ error: '未收到頭像檔案' });
+    }
     
-    // 向每個群組發送頭像更新通知
-    for (const group of groups) {
-      io.to(group._id.toString()).emit('avatar updated', {
-        userId: user._id,
-        username: user.username,
-        avatar: user.avatar,
-        groupId: group._id
+    console.log('檔案信息:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      console.log('用戶不存在:', req.user.id);
+      return res.status(404).json({ error: '用戶不存在' });
+    }
+    
+    console.log('當前用戶頭像:', user.avatar);
+    
+    // 刪除舊頭像檔案（如果有且不是2.jpeg）
+    if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
+      const oldPath = path.join(__dirname, '..', user.avatar);
+      console.log('嘗試刪除舊頭像:', oldPath);
+      fs.unlink(oldPath, err => {
+        if (err) console.log('刪除舊頭像失敗', oldPath, err.message);
+        else console.log('成功刪除舊頭像:', oldPath);
       });
     }
     
-    console.log(`已發送頭像更新通知給 ${groups.length} 個群組`);
+    user.avatar = `/uploads/${req.file.filename}`;
+    await user.save();
+    console.log('已保存新頭像路徑:', user.avatar);
+    
+    // 發送 WebSocket 通知給所有相關群組成員
+    try {
+      const io = req.app.get('io');
+      const Group = require('../models/Group');
+      
+      // 找到用戶所在的所有群組
+      const groups = await Group.find({ members: user._id });
+      
+      // 向每個群組發送頭像更新通知
+      for (const group of groups) {
+        io.to(group._id.toString()).emit('avatar updated', {
+          userId: user._id,
+          username: user.username,
+          avatar: user.avatar,
+          groupId: group._id
+        });
+      }
+      
+      console.log(`已發送頭像更新通知給 ${groups.length} 個群組`);
+    } catch (error) {
+      console.error('發送頭像更新通知失敗:', error);
+    }
+    
+    console.log('頭像上傳成功，返回路徑:', user.avatar);
+    res.json({ avatar: user.avatar });
   } catch (error) {
-    console.error('發送頭像更新通知失敗:', error);
+    console.error('頭像上傳過程中發生錯誤:', error);
+    res.status(500).json({ error: '頭像上傳失敗', details: error.message });
   }
-  
-  res.json({ avatar: user.avatar });
 });
 
 // 修改 Email
