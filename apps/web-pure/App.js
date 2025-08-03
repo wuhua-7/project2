@@ -70,13 +70,13 @@ function renderContentWithMention(content, username, group) {
 // 新增：取得用戶頭像
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
-    return profile.avatar ? API_URL + profile.avatar : null;
+    return profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
     if (user && user.avatar) return API_URL + user.avatar;
   }
-  return null;
+  return API_URL + '/uploads/2.jpeg';
 }
 
 // 新增：渲染頭像組件
@@ -1315,12 +1315,19 @@ function App() {
     const img = new Image();
     
     img.onload = () => {
-      const scaleX = img.naturalWidth / img.width;
-      const scaleY = img.naturalHeight / img.height;
+      // 獲取實際的圖片尺寸
+      const imgElement = document.querySelector('.ReactCrop__image');
+      if (!imgElement) return;
       
+      const imgRect = imgElement.getBoundingClientRect();
+      const scaleX = img.naturalWidth / imgRect.width;
+      const scaleY = img.naturalHeight / imgRect.height;
+      
+      // 設置畫布大小為裁切區域大小
       canvas.width = crop.width;
       canvas.height = crop.height;
       
+      // 繪製裁切後的圖片
       ctx.drawImage(
         img,
         crop.x * scaleX,
@@ -1333,9 +1340,13 @@ function App() {
         crop.height
       );
       
+      // 轉換為 blob 並創建新文件
       canvas.toBlob((blob) => {
         const croppedFile = new File([blob], avatarFile.name, { type: avatarFile.type });
         setAvatarFile(croppedFile);
+        // 更新預覽為裁切後的圖片
+        const croppedPreview = URL.createObjectURL(blob);
+        setAvatarPreview(croppedPreview);
         setShowCropModal(false);
       }, 'image/jpeg', 0.9);
     };
@@ -2276,29 +2287,10 @@ function App() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
-              {profile.avatar ? (
-                <img src={API_URL + profile.avatar} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
-              ) : (
-                <div style={{ 
-                  width: 96, 
-                  height: 96, 
-                  borderRadius: '50%', 
-                  background: '#2196f3',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 36,
-                  fontWeight: 'bold',
-                  color: '#fff',
-                  marginBottom: 8, 
-                  border: '2px solid #2196f3' 
-                }}>
-                  {profile.username ? profile.username.charAt(0).toUpperCase() : '?'}
-                </div>
-              )}
+              <img src={profile.avatar ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} alt="頭像" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }} />
               <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
-                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像 ({avatarFile.name})</button>
+                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
               )}
               {!avatarFile && (
                 <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>請先選擇頭像文件</div>
@@ -2370,31 +2362,11 @@ function App() {
             <ul style={{ padding: 0, listStyle: 'none' }}>
               {currentGroupObj.members.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                  {u.avatar ? (
-                    <img
-                      src={API_URL + u.avatar}
-                      alt={u.username}
-                      style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
-                    />
-                  ) : (
-                    <div style={{ 
-                      width: 32, 
-                      height: 32, 
-                      borderRadius: '50%', 
-                      background: '#e0e0e0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      color: '#666',
-                      border: '1px solid #bbb', 
-                      background: '#fff', 
-                      marginRight: 8 
-                    }}>
-                      {u.username ? u.username.charAt(0).toUpperCase() : '?'}
-                    </div>
-                  )}
+                  <img
+                    src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
+                    alt={u.username}
+                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
+                  />
                   <span style={{ fontSize: 15, color: '#222', wordBreak: 'break-all' }}>{u.username}</span>
                 </li>
               ))}
