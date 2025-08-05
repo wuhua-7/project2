@@ -87,7 +87,34 @@ app.options('*', cors({
   optionsSuccessStatus: 204
 }));
 app.use(express.json());
+
+// 公開的 manifest.json 路由
+app.get('/manifest.json', (req, res) => {
+  res.json({
+    "name": "Chat App",
+    "short_name": "Chat",
+    "description": "A real-time chat application",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2196f3",
+    "icons": [
+      {
+        "src": "/assets/icon.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ]
+  });
+});
+
+// 靜態檔案服務 - 必須在認證路由之前，確保公開訪問
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// 添加公開的 assets 路由
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+
+// API 路由 - 需要認證
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
