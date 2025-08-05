@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
+    const uploadDir = path.join(__dirname, 'uploads');
     console.log('上傳目錄:', uploadDir);
     
     // 確保目錄存在
@@ -82,7 +82,7 @@ router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
     
          // 刪除舊頭像檔案（如果有且不是2.jpeg）
      if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
-       const oldPath = path.join(__dirname, '..', 'uploads', user.avatar.replace('/uploads/', ''));
+       const oldPath = path.join(__dirname, 'uploads', user.avatar.replace('/uploads/', ''));
        console.log('嘗試刪除舊頭像:', oldPath);
        // 檢查文件是否存在再刪除
        if (fs.existsSync(oldPath)) {
