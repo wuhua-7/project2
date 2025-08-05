@@ -1,10 +1,10 @@
-// API 配置 - 支援環境變數 (v3.0 - 終極快取清除)
+// API 配置 - 支援環境變數 (v4.0 - 強制修正 URL)
 const getApiUrl = () => {
-  // 優先使用環境變數，否則使用預設值
-  const apiUrl = process.env.REACT_APP_API_URL || 'https://project2-g1cl.onrender.com';
-  console.log('使用雲端後端 URL (v3.0):', apiUrl);
+  // 強制使用正確的 URL，忽略環境變數
+  const apiUrl = 'https://project2-g1cl.onrender.com';
+  console.log('使用雲端後端 URL (v4.0 - 強制修正):', apiUrl);
   
-  // 終極緩存清除 (v3.0)
+  // 終極緩存清除 (v4.0)
   if (typeof window !== 'undefined') {
     // 清除所有可能的 API URL 緩存
     const keysToRemove = [];
