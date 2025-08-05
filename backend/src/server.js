@@ -346,7 +346,7 @@ app.get('/api/download/:messageId', async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(messageId)) return res.status(400).send('Invalid messageId');
   const msg = await Message.findById(messageId);
   if (!msg || !msg.url || !msg.filename) return res.status(404).send('File not found');
-  const filePath = path.join(__dirname, '..', msg.url);
+  const filePath = path.join(__dirname, msg.url.replace('/uploads/', 'uploads/'));
   const filename = msg.filename;
   const encoded = encodeURIComponent(filename);
   res.setHeader(
@@ -358,7 +358,7 @@ app.get('/api/download/:messageId', async (req, res) => {
 
 // 測試文件上傳功能
 app.get('/test-upload', (req, res) => {
-  const uploadDir = path.join(__dirname, '../uploads');
+  const uploadDir = path.join(__dirname, 'uploads');
   const files = fs.readdirSync(uploadDir);
   res.json({
     message: 'Upload test endpoint',
