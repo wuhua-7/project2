@@ -141,6 +141,24 @@ router.post('/email', auth, async (req, res) => {
   res.json({ email: user.email });
 });
 
+// 重置頭像為預設值
+router.post('/reset-avatar', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: '用戶不存在' });
+    
+    // 重置為預設頭像
+    user.avatar = '/uploads/2.jpeg';
+    await user.save();
+    
+    console.log('已重置用戶頭像為預設值:', user.username);
+    res.json({ avatar: user.avatar });
+  } catch (error) {
+    console.error('重置頭像失敗:', error);
+    res.status(500).json({ error: '重置頭像失敗' });
+  }
+});
+
 // 取得個人資料
 router.get('/profile', auth, async (req, res) => {
   const user = await User.findById(req.user.id);
