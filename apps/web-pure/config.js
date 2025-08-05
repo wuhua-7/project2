@@ -1,10 +1,10 @@
-// API 配置 - 支援環境變數 (v2.0 - 強制清除快取)
+// API 配置 - 支援環境變數 (v3.0 - 終極快取清除)
 const getApiUrl = () => {
   // 優先使用環境變數，否則使用預設值
   const apiUrl = process.env.REACT_APP_API_URL || 'https://project2-g1cl.onrender.com';
-  console.log('使用雲端後端 URL (v2.0):', apiUrl);
+  console.log('使用雲端後端 URL (v3.0):', apiUrl);
   
-  // 終極緩存清除 (v2.0)
+  // 終極緩存清除 (v3.0)
   if (typeof window !== 'undefined') {
     // 清除所有可能的 API URL 緩存
     const keysToRemove = [];
@@ -27,6 +27,12 @@ const getApiUrl = () => {
         console.warn('檢測到舊的 glcl URL，強制重新載入');
         window.location.reload(true);
       }
+    }
+    
+    // 檢查是否有任何地方使用了錯誤的 URL
+    if (window.location.href.includes('glcl')) {
+      console.error('檢測到錯誤的 glcl URL，強制重新導向');
+      window.location.href = window.location.href.replace('glcl', 'g1cl');
     }
   }
   
