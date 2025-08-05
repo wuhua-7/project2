@@ -10,7 +10,7 @@ const path = require('path');
 // 配置 multer 以支持文件副檔名
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+    const uploadDir = path.join(__dirname, '..', 'uploads');
     // 確保目錄存在
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -87,7 +87,7 @@ app.options('*', cors({
   optionsSuccessStatus: 204
 }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '..', '..', 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
@@ -398,7 +398,7 @@ app.get('/api/download/:messageId', async (req, res) => {
 
 // 測試文件上傳功能
 app.get('/test-upload', (req, res) => {
-  const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+  const uploadDir = path.join(__dirname, '..', 'uploads');
   const files = fs.readdirSync(uploadDir);
   res.json({
     message: 'Upload test endpoint',
