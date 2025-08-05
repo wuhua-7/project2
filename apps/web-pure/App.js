@@ -259,6 +259,7 @@ function App() {
   console.log('群組成員', currentGroupObj?.members);
   // 確保群組成員數據存在
   const groupMembers = currentGroupObj?.members || [];
+  const hasGroupMembers = Array.isArray(groupMembers) && groupMembers.length > 0;
   const [rememberMe, setRememberMe] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState({ username: '', email: '', avatar: '', createdAt: '' });
@@ -1719,31 +1720,26 @@ function App() {
             </div>
             {/* 群組成員按鈕區塊，永遠顯示在搜尋框下方、訊息區上方 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              {currentGroupObj && Array.isArray(currentGroupObj.members) && (
-                <div style={{ margin: '12px 0', background: '#f8f9fa', borderRadius: 8, padding: 12, display: 'flex', alignItems: 'center' }}>
-                  <b style={{ marginRight: 8 }}>群組成員：</b>
-                  <button
-                    onClick={() => setShowGroupMemberList(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0
-                    }}
-                  >
-                    {currentGroupObj.members.slice(0, 3).map((u, idx) => (
-                      <span key={u._id || idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 48 }}>
+              {currentGroupObj && hasGroupMembers && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>群組成員 ({groupMembers.length})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {groupMembers.slice(0, 3).map((u, idx) => (
+                      <div key={u._id || idx} style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
                         <img
                           src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
                           alt={u.username}
-                          style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginBottom: 2 }}
+                          style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', marginRight: 4 }}
                         />
-                        <span style={{ fontSize: 12, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{u.username}</span>
-                  </span>
-                ))}
-                    {currentGroupObj.members.length > 3 && (
-                      <span style={{ fontSize: 24, color: '#888', marginLeft: 4 }}>...</span>
+                        <span>{u.username}</span>
+                      </div>
+                    ))}
+                    {groupMembers.length > 3 && (
+                      <div style={{ fontSize: 12, color: '#666' }}>+{groupMembers.length - 3} 更多</div>
                     )}
-                  </button>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
               {/* 群組語音/視訊通話按鈕 */}
               <div style={{ display: 'flex', gap: 8, marginLeft: 12 }}>
                 <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
@@ -2515,11 +2511,11 @@ function App() {
         </div>
       )}
       {/* 群組成員完整列表彈窗 */}
-      {showGroupMemberList && currentGroupObj && Array.isArray(currentGroupObj.members) && (
+      {showGroupMemberList && currentGroupObj && hasGroupMembers && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowGroupMemberList(false)}>
           <div style={{ background: '#fff', borderRadius: 12, padding: 24, minWidth: 320, maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowGroupMemberList(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-            <h3>群組成員</h3>
+            <h3>群組成員 ({groupMembers.length})</h3>
             <ul style={{ padding: 0, listStyle: 'none' }}>
               {groupMembers.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
