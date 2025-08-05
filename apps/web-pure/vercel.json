@@ -6,5 +6,28 @@
     "env": {
       "REACT_APP_API_URL": "https://project2-g1cl.onrender.com"
     }
-  }
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "web-build",
+  "rewrites": [
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    }
+  ]
 } 
