@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads');
+    const uploadDir = path.join(__dirname, 'uploads');
     console.log('上傳目錄:', uploadDir);
     
     // 確保目錄存在
