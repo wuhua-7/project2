@@ -257,6 +257,8 @@ function App() {
   const [editOriginalContent, setEditOriginalContent] = useState('');
   const currentGroupObj = groups.find(g => g._id === currentGroup);
   console.log('群組成員', currentGroupObj?.members);
+  // 確保群組成員數據存在
+  const groupMembers = currentGroupObj?.members || [];
   const [rememberMe, setRememberMe] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState({ username: '', email: '', avatar: '', createdAt: '' });
@@ -687,9 +689,21 @@ function App() {
     fetch(`${API_URL}/api/group/my`, {
       headers: { Authorization: `Bearer ${tk}` }
     })
-      .then(res => res.json())
-      .then(data => setGroups(Array.isArray(data) ? data : []))
-      .catch(() => setGroups([]));
+      .then(res => {
+        if (!res.ok) {
+          console.error('獲取群組失敗:', res.status, res.statusText);
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('獲取到群組數據:', data);
+        setGroups(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        console.error('獲取群組錯誤:', error);
+        setGroups([]);
+      });
   };
 
   const handleAuth = async (type) => {
@@ -2507,7 +2521,7 @@ function App() {
             <button onClick={() => setShowGroupMemberList(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
             <h3>群組成員</h3>
             <ul style={{ padding: 0, listStyle: 'none' }}>
-              {currentGroupObj.members.map((u, idx) => (
+              {groupMembers.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                   <img
                     src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
