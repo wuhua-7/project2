@@ -1,7 +1,7 @@
 // API 配置 - 支援環境變數
 const getApiUrl = () => {
   // 優先使用環境變數，否則使用預設值
-  const apiUrl = process.env.REACT_APP_API_URL || 'https://project2-glcl.onrender.com';
+  const apiUrl = process.env.REACT_APP_API_URL || 'https://project2-g1cl.onrender.com';
   console.log('使用雲端後端 URL:', apiUrl);
   
   // 終極緩存清除
