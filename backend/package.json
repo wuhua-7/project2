@@ -1,7 +1,7 @@
 {
   "name": "chat-backend",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "src/server.js",
   "license": "MIT",
   "dependencies": {
     "archiver": "^7.0.1",
@@ -15,6 +15,7 @@
     "socket.io": "^4.8.1"
   },
   "scripts": {
+    "start": "node src/server.js",
     "dev": "node src/server.js"
   }
 }

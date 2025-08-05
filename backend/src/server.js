@@ -62,7 +62,7 @@ app.use(cors({
 }));
 app.options('*', cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/group', groupRouter);
@@ -365,6 +365,15 @@ app.get('/test-upload', (req, res) => {
     uploadDir: uploadDir,
     fileCount: files.length,
     files: files.slice(0, 10) // 只顯示前10個文件
+  });
+});
+
+// 健康檢查端點
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
