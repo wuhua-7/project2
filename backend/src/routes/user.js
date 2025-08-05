@@ -82,7 +82,7 @@ router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
     
          // 刪除舊頭像檔案（如果有且不是2.jpeg）
      if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
-       const oldPath = path.join(__dirname, '..', user.avatar);
+       const oldPath = path.join(__dirname, 'uploads', user.avatar.replace('/uploads/', ''));
        console.log('嘗試刪除舊頭像:', oldPath);
        // 檢查文件是否存在再刪除
        if (fs.existsSync(oldPath)) {
