@@ -12,7 +12,7 @@ const getApiUrl = () => {
   
   // 生产环境默认使用 Render 后端
   // 请根据您的实际 Render 后端 URL 修改
-  return 'https://project2-g1cl.onrender.com';
+  return 'https://project2-glcl.onrender.com';
 };
 
 export const API_URL = getApiUrl();
