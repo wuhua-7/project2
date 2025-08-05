@@ -48,8 +48,9 @@ app.use(cors({
       return;
     }
     
-    // 允許所有 vercel.app 域名
-    if (origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('192.168.1.121')) {
+    // 允許所有 vercel.app 域名和本地開發
+    if (origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('192.168.1.121') || origin.includes('127.0.0.1')) {
+      console.log('CORS allowed origin:', origin);
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -58,7 +59,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.options('*', cors());
 app.use(express.json());
@@ -70,7 +71,22 @@ app.use('/api/group', groupRouter);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: function(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // 允許所有 vercel.app 域名和本地開發
+      if (origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('192.168.1.121') || origin.includes('127.0.0.1')) {
+        console.log('Socket.IO CORS allowed origin:', origin);
+        callback(null, true);
+      } else {
+        console.log('Socket.IO CORS blocked origin:', origin);
+        callback(new Error('Not allowed by Socket.IO CORS'));
+      }
+    },
+    credentials: true,
     methods: ['GET', 'POST']
   }
 });
