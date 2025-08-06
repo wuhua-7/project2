@@ -686,25 +686,18 @@ function App() {
     return res;
   };
 
-  const fetchGroups = (tk) => {
-    fetch(`${API_URL}/api/group/my`, {
-      headers: { Authorization: `Bearer ${tk}` }
-    })
-      .then(res => {
-        if (!res.ok) {
-          console.error('獲取群組失敗:', res.status, res.statusText);
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        console.log('獲取到群組數據:', data);
-        setGroups(Array.isArray(data) ? data : []);
-      })
-      .catch((error) => {
-        console.error('獲取群組錯誤:', error);
-        setGroups([]);
+  const fetchGroups = async (tk) => {
+    try {
+      const res = await safeFetch(`${API_URL}/api/group/my`, {
+        headers: { Authorization: `Bearer ${tk}` }
       });
+      const data = await res.json();
+      console.log('獲取到群組數據:', data);
+      setGroups(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('獲取群組錯誤:', error);
+      setGroups([]);
+    }
   };
 
   const handleAuth = async (type) => {
@@ -1304,23 +1297,17 @@ function App() {
   // 取得個人資料
   const fetchProfile = async () => {
     console.log('開始獲取用戶資料...');
-    const res = await fetch(`${API_URL}/api/user/profile`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.status === 401) {
-      alert('登入已過期，請重新登入');
-      setPage('login');
-      setToken('');
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      return;
-    }
-    if (res.ok) {
+    try {
+      const res = await safeFetch(`${API_URL}/api/user/profile`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
       const data = await res.json();
       console.log('獲取到用戶資料:', data);
       setProfile(data);
       // 將用戶資料保存到 localStorage 以備緩存
       localStorage.setItem('userProfile', JSON.stringify(data));
-    } else {
-      console.error('獲取用戶資料失敗:', res.status, res.statusText);
+    } catch (error) {
+      console.error('獲取用戶資料失敗:', error);
     }
   };
   useEffect(() => {
@@ -1346,7 +1333,7 @@ function App() {
     const formData = new FormData();
     formData.append('avatar', avatarFile);
     try {
-      const res = await fetch(`${API_URL}/api/user/avatar`, {
+      const res = await safeFetch(`${API_URL}/api/user/avatar`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
