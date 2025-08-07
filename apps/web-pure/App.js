@@ -89,17 +89,25 @@ function renderContentWithMention(content, username, group) {
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
     if (profile.avatar && profile.avatar !== '') {
+      // 檢查是否為預設頭像路徑
+      if (profile.avatar === '/uploads/2.jpeg') {
+        return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+      }
       // 檢查是否為 Cloudinary URL
       if (profile.avatar.startsWith('http')) {
         return profile.avatar;
       }
       return API_URL + profile.avatar;
     }
-    return API_URL + '/uploads/2.jpeg';
+    return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
     if (user && user.avatar && user.avatar !== '') {
+      // 檢查是否為預設頭像路徑
+      if (user.avatar === '/uploads/2.jpeg') {
+        return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+      }
       // 檢查是否為 Cloudinary URL
       if (user.avatar.startsWith('http')) {
         return user.avatar;
@@ -107,7 +115,7 @@ function getUserAvatar(username, groupInfo, profile) {
       return API_URL + user.avatar;
     }
   }
-  return API_URL + '/uploads/2.jpeg';
+  return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
 }
 
 // 新增：渲染頭像組件
@@ -132,9 +140,9 @@ function renderAvatar(username, groupInfo, profile, isMe = false) {
         style={avatarStyle}
         onError={(e) => {
           // 如果載入失敗，自動切換到預設頭像
-          if (e.target.src !== API_URL + '/uploads/2.jpeg') {
+          if (e.target.src !== 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg') {
             console.log('聊天頭像載入失敗，切換到預設頭像:', e.target.src);
-            e.target.src = API_URL + '/uploads/2.jpeg';
+            e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
           }
         }}
       />
@@ -707,23 +715,17 @@ function App() {
       });
       const data = await res.json();
       console.log('獲取到群組數據:', data);
-      
-      // 檢查每個群組的成員數據
-      if (Array.isArray(data)) {
-        data.forEach((group, index) => {
-          console.log(`群組 ${index + 1}:`, {
-            id: group._id,
-            name: group.name,
-            membersCount: group.members?.length || 0,
-            members: group.members
-          });
-        });
+      if (Array.isArray(data) && data.length > 0) {
+        setGroups(data);
+        setCurrentGroup(prev => prev || data[0]._id); // 自動選第一個群組
+      } else {
+        setGroups([]);
+        setCurrentGroup(null);
       }
-      
-      setGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('獲取群組錯誤:', error);
       setGroups([]);
+      setCurrentGroup(null);
     }
   };
 
@@ -1614,6 +1616,12 @@ function App() {
     );
   }
 
+  useEffect(() => {
+    if (groups.length > 0 && !currentGroup) {
+      setCurrentGroup(groups[0]._id);
+    }
+  }, [groups, currentGroup]);
+
   if (page === 'login' || page === 'register') {
     return (
       <div style={{ maxWidth: 400, margin: '40px auto', fontFamily: 'sans-serif' }}>
@@ -1741,7 +1749,9 @@ function App() {
                     {groupMembers.slice(0, 3).map((u, idx) => (
                       <div key={u._id || idx} style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
                         <img
-                          src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
+                          src={u.avatar ? 
+                            (u.avatar.startsWith('http') ? u.avatar : API_URL + u.avatar) : 
+                            'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
                           alt={u.username}
                           style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', marginRight: 4 }}
                         />
@@ -2225,7 +2235,9 @@ function App() {
                 return (
                   <li key={i} style={{ marginBottom: 4, display: 'flex', alignItems: 'center' }}>
                     <img
-                      src={m.avatar ? API_URL + m.avatar : API_URL + '/uploads/2.jpeg'}
+                      src={m.avatar ? 
+                        (m.avatar.startsWith('http') ? m.avatar : API_URL + m.avatar) : 
+                        'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
                       alt={m.username}
                       style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
                     />
@@ -2448,18 +2460,18 @@ function App() {
               <img 
                 src={profile.avatar && profile.avatar !== '' ? 
                   (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar) : 
-                  API_URL + '/uploads/2.jpeg'} 
+                  'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'} 
                 alt="頭像" 
                 style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }}
                 onLoad={() => console.log('頭像載入成功:', profile.avatar && profile.avatar !== '' ? 
                   (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar) : 
-                  API_URL + '/uploads/2.jpeg')}
+                  'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg')}
                 onError={(e) => {
                   console.error('頭像載入失敗:', e.target.src, 'profile.avatar:', profile.avatar);
                   // 如果載入失敗，自動切換到預設頭像
-                  if (e.target.src !== API_URL + '/uploads/2.jpeg') {
+                  if (e.target.src !== 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg') {
                     console.log('自動切換到預設頭像');
-                    e.target.src = API_URL + '/uploads/2.jpeg';
+                    e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
                   }
                 }}
               />
@@ -2540,7 +2552,7 @@ function App() {
                   <img
                     src={u.avatar ? 
                       (u.avatar.startsWith('http') ? u.avatar : API_URL + u.avatar) : 
-                      API_URL + '/uploads/2.jpeg'}
+                      'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
                     alt={u.username}
                     style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
                   />
@@ -2573,4 +2585,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

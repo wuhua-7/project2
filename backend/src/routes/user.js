@@ -123,8 +123,8 @@ router.post('/reset-avatar', auth, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: '用戶不存在' });
     
-    // 重置為預設頭像
-    user.avatar = '/uploads/2.jpeg';
+    // 重置為預設頭像 (使用 Cloudinary URL)
+    user.avatar = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
     await user.save();
     
     console.log('已重置用戶頭像為預設值:', user.username);
@@ -199,4 +199,4 @@ router.get('/push-logs/stats', auth, async (req, res) => {
   res.json(stats[0]);
 });
 
-module.exports = router; 
+module.exports = router;
