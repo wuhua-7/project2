@@ -88,11 +88,24 @@ function renderContentWithMention(content, username, group) {
 // 新增：取得用戶頭像
 function getUserAvatar(username, groupInfo, profile) {
   if (profile && username === profile.username) {
-    return profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg';
+    if (profile.avatar && profile.avatar !== '') {
+      // 檢查是否為 Cloudinary URL
+      if (profile.avatar.startsWith('http')) {
+        return profile.avatar;
+      }
+      return API_URL + profile.avatar;
+    }
+    return API_URL + '/uploads/2.jpeg';
   }
   if (groupInfo && groupInfo.members) {
     const user = groupInfo.members.find(u => u.username === username);
-    if (user && user.avatar && user.avatar !== '') return API_URL + user.avatar;
+    if (user && user.avatar && user.avatar !== '') {
+      // 檢查是否為 Cloudinary URL
+      if (user.avatar.startsWith('http')) {
+        return user.avatar;
+      }
+      return API_URL + user.avatar;
+    }
   }
   return API_URL + '/uploads/2.jpeg';
 }
@@ -257,6 +270,7 @@ function App() {
   const [editOriginalContent, setEditOriginalContent] = useState('');
   const currentGroupObj = groups.find(g => g._id === currentGroup);
   console.log('群組成員', currentGroupObj?.members);
+  console.log('當前群組對象:', currentGroupObj);
   // 確保群組成員數據存在
   const groupMembers = currentGroupObj?.members || [];
   const hasGroupMembers = Array.isArray(groupMembers) && groupMembers.length > 0;
@@ -693,6 +707,19 @@ function App() {
       });
       const data = await res.json();
       console.log('獲取到群組數據:', data);
+      
+      // 檢查每個群組的成員數據
+      if (Array.isArray(data)) {
+        data.forEach((group, index) => {
+          console.log(`群組 ${index + 1}:`, {
+            id: group._id,
+            name: group.name,
+            membersCount: group.members?.length || 0,
+            members: group.members
+          });
+        });
+      }
+      
       setGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('獲取群組錯誤:', error);
@@ -2419,10 +2446,14 @@ function App() {
             )}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
               <img 
-                src={profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg'} 
+                src={profile.avatar && profile.avatar !== '' ? 
+                  (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar) : 
+                  API_URL + '/uploads/2.jpeg'} 
                 alt="頭像" 
                 style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', marginBottom: 8, border: '2px solid #2196f3' }}
-                onLoad={() => console.log('頭像載入成功:', profile.avatar && profile.avatar !== '' ? API_URL + profile.avatar : API_URL + '/uploads/2.jpeg')}
+                onLoad={() => console.log('頭像載入成功:', profile.avatar && profile.avatar !== '' ? 
+                  (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar) : 
+                  API_URL + '/uploads/2.jpeg')}
                 onError={(e) => {
                   console.error('頭像載入失敗:', e.target.src, 'profile.avatar:', profile.avatar);
                   // 如果載入失敗，自動切換到預設頭像
@@ -2507,7 +2538,9 @@ function App() {
               {groupMembers.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                   <img
-                    src={u.avatar ? API_URL + u.avatar : API_URL + '/uploads/2.jpeg'}
+                    src={u.avatar ? 
+                      (u.avatar.startsWith('http') ? u.avatar : API_URL + u.avatar) : 
+                      API_URL + '/uploads/2.jpeg'}
                     alt={u.username}
                     style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
                   />

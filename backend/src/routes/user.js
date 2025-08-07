@@ -3,31 +3,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const router = express.Router();
 const PushLog = require('../models/PushLog');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    console.log('上傳目錄:', uploadDir);
-    
-    // 確保目錄存在
-    if (!fs.existsSync(uploadDir)) {
-      console.log('創建上傳目錄:', uploadDir);
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const basename = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = basename + ext;
-    console.log('生成檔案名:', filename);
-    cb(null, filename);
-  }
-});
-const upload = multer({ storage });
+const { upload, cloudinary } = require('../config/cloudinary');
 
 // 儲存 Expo Push Token
 router.post('/push-token', auth, async (req, res) => {
@@ -69,7 +45,8 @@ router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
       filename: req.file.filename,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
+      url: req.file.path
     });
     
     const user = await User.findById(req.user.id);
@@ -80,22 +57,21 @@ router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
     
     console.log('當前用戶頭像:', user.avatar);
     
-         // 刪除舊頭像檔案（如果有且不是2.jpeg）
-     if (user.avatar && user.avatar !== '/uploads/2.jpeg') {
-       const oldPath = path.join(__dirname, '..', 'uploads', user.avatar.replace('/uploads/', ''));
-       console.log('嘗試刪除舊頭像:', oldPath);
-       // 檢查文件是否存在再刪除
-       if (fs.existsSync(oldPath)) {
-         fs.unlink(oldPath, err => {
-           if (err) console.log('刪除舊頭像失敗', oldPath, err.message);
-           else console.log('成功刪除舊頭像:', oldPath);
-         });
-       } else {
-         console.log('舊頭像文件不存在，跳過刪除:', oldPath);
-       }
-     }
+    // 刪除舊的 Cloudinary 圖片（如果有且不是預設頭像）
+    if (user.avatar && user.avatar !== '/uploads/2.jpeg' && user.avatar.includes('cloudinary')) {
+      try {
+        // 從 URL 中提取 public_id
+        const urlParts = user.avatar.split('/');
+        const publicId = urlParts[urlParts.length - 1].split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+        console.log('成功刪除舊的 Cloudinary 圖片:', publicId);
+      } catch (error) {
+        console.log('刪除舊的 Cloudinary 圖片失敗:', error.message);
+      }
+    }
     
-    user.avatar = `/uploads/${req.file.filename}`;
+    // 使用 Cloudinary URL
+    user.avatar = req.file.path;
     await user.save();
     console.log('已保存新頭像路徑:', user.avatar);
     
