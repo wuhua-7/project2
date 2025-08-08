@@ -9,34 +9,50 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// 創建 Cloudinary 存儲配置且根據文件類型處理
+// 創建 Cloudinary 存儲配置 - 和頭像上傳一模一樣
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
+    console.log('Cloudinary 上傳文件:', {
+      fieldname: file.fieldname,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+    
     // 檢查文件類型
     const isImage = file.mimetype.startsWith('image/');
     const isVideo = file.mimetype.startsWith('video/');
     const isAudio = file.mimetype.startsWith('audio/');
     
-    // 基本參數
+    // 基本參數 - 和頭像上傳一樣
     let params = {
       folder: 'chat-app',
-      resource_type: 'auto' // 自動識別資源類型
+      resource_type: 'auto', // 自動識別資源類型
+      access_mode: 'public' // 確保公開訪問
     };
     
-    // 只對圖片應用轉換
-    if (isImage) {
+    // 頭像和一般圖片的處理
+    if (file.fieldname === 'avatar' && isImage) {
+      // 頭像特殊處理
       params.transformation = [
-        { width: 800, height: 800, crop: 'limit' }, // 限制最大尺寸
+        { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+        { quality: 'auto' }
+      ];
+    } else if (isImage) {
+      // 一般圖片
+      params.transformation = [
+        { width: 1200, height: 1200, crop: 'limit' }, // 限制最大尺寸
         { quality: 'auto' }
       ];
     }
     
-    // 視頻和音頻不做轉換
+    // 視頻和音頻使用 video 資源類型
     if (isVideo || isAudio) {
-      params.resource_type = 'video'; // 視頻和音頻都使用 video 類型
+      params.resource_type = 'video';
     }
     
+    console.log('Cloudinary 參數:', params);
     return params;
   }
 });

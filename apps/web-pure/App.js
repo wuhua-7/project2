@@ -1975,11 +1975,11 @@ function App() {
                               {msg.type === 'image' && msg.url ? (
                                   <div>
                                     <img
-                                      src={msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url}
+                                      src={msg.url.startsWith('blob:') || msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
                                       alt="圖片"
                                       style={{ maxWidth: 220, maxHeight: 180, borderRadius: 8, marginBottom: 4, cursor: 'pointer', display: 'block', objectFit: 'cover' }}
-                                      onClick={() => setMediaPreview({ type: 'image', url: msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url })}
-                                      onLoad={() => console.log('圖片載入成功:', msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url)}
+                                      onClick={() => setMediaPreview({ type: 'image', url: msg.url.startsWith('blob:') || msg.url.startsWith('http') ? msg.url : API_URL + msg.url })}
+                                      onLoad={() => console.log('圖片載入成功:', msg.url.startsWith('blob:') || msg.url.startsWith('http') ? msg.url : API_URL + msg.url)}
                                       onError={(e) => {
                                         console.error('圖片載入失敗:', e.target.src, '原始URL:', msg.url);
                                         e.target.style.display = 'none';
@@ -1990,8 +1990,9 @@ function App() {
                                       <span>圖片載入失敗</span>
                                       <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>URL: {msg.url}</div>
                                       <button onClick={() => {
-                                        console.log('嘗試在新視窗開啟圖片:', API_URL + msg.url);
-                                        const newWindow = window.open(API_URL + msg.url, '_blank');
+                                        const finalUrl = msg.url.startsWith('http') ? msg.url : API_URL + msg.url;
+                                        console.log('嘗試在新視窗開啟圖片:', finalUrl);
+                                        const newWindow = window.open(finalUrl, '_blank');
                                         if (!newWindow) {
                                           alert('無法開啟新視窗，請檢查彈出視窗設定');
                                         }
@@ -2001,18 +2002,19 @@ function App() {
                               ) : msg.type === 'video' && msg.url ? (
                                   <div style={{ position: 'relative', width: 220, height: 180, borderRadius: 8, overflow: 'hidden', background: '#000' }}>
                                     <video
-                                      src={msg.url.startsWith('blob:') ? msg.url : API_URL + msg.url}
+                                      src={msg.url.startsWith('blob:') || msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
                                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                       poster={msg.poster || ''}
                                       controls
                                       preload="metadata"
                                       onError={(e) => {
                                         console.error('視頻載入失敗:', e.target.src);
+                                        const finalUrl = msg.url.startsWith('http') ? msg.url : API_URL + msg.url;
                                         e.target.style.display = 'none';
                                         e.target.parentNode.innerHTML = `
                                           <div style="padding: 20px; text-align: center; color: #fff;">
                                             <div>視頻載入失敗</div>
-                                            <button onclick="window.open('${API_URL + msg.url}', '_blank')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: #2196f3; color: #fff; border: none; border-radius: 4px; cursor: pointer;">在新視窗開啟</button>
+                                            <button onclick="window.open('${finalUrl}', '_blank')" style="margin-top: 8px; padding: 4px 8px; font-size: 12px; background: #2196f3; color: #fff; border: none; border-radius: 4px; cursor: pointer;">在新視窗開啟</button>
                                           </div>
                                         `;
                                       }}
@@ -2043,7 +2045,7 @@ function App() {
                                         optimisticId: msg.optimisticId, 
                                         currentPlaying: playingVoiceId 
                                       });
-                                    const audioUrl = API_URL + msg.url;
+                                    const audioUrl = msg.url.startsWith('http') ? msg.url : API_URL + msg.url;
                                     console.log('嘗試播放語音:', audioUrl);
                                     try {
                                         if (!audioRefs.current[msg._id]) {

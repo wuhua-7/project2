@@ -280,92 +280,119 @@ io.toUser = function(userId) {
 
 // 語音訊息上傳 API
 app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req, res) => {
-  console.log('進入 /api/upload/voice 路由', req.body, req.file);
-  if (!req.file) return res.status(400).json({ error: '未收到語音檔案' });
-  const { groupId, optimisticId } = req.body; // 新增 optimisticId
-  if (!groupId) return res.status(400).json({ error: '缺少群組ID' });
-  
-  console.log('語音文件信息:', {
-    filename: req.file.filename || req.file.originalname,
-    originalname: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size,
-    cloudinaryUrl: req.file.path
-  });
-  
-  const Message = require('./models/Message');
-  const msg = new Message({
-    group: groupId,
-    sender: req.user.id,
-    type: 'voice',
-    url: req.file.path, // 使用 Cloudinary URL
-    optimisticId // 儲存 optimisticId
-  });
-  await msg.save();
-  io.to(groupId).emit('group message', {
-    groupId,
-    sender: req.user.username,
-    type: 'voice',
-    url: msg.url,
-    createdAt: msg.createdAt,
-    _id: msg._id, // 回傳 _id
-    optimisticId // 回傳 optimisticId
-  });
-  res.json({ url: msg.url, _id: msg._id, optimisticId }); // 回傳 _id 和 optimisticId
+  try {
+    console.log('收到語音上傳請求', req.file);
+    console.log('用戶ID:', req.user.id);
+    
+    if (!req.file) {
+      console.log('未收到語音檔案');
+      return res.status(400).json({ error: '未收到語音檔案' });
+    }
+    
+    const { groupId, optimisticId } = req.body;
+    if (!groupId) {
+      console.log('缺少群組ID');
+      return res.status(400).json({ error: '缺少群組ID' });
+    }
+    
+    console.log('檔案信息:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      url: req.file.path
+    });
+    
+    const Message = require('./models/Message');
+    const msg = new Message({
+      group: groupId,
+      sender: req.user.id,
+      type: 'voice',
+      url: req.file.path, // 使用 Cloudinary URL
+      optimisticId // 儲存 optimisticId
+    });
+    await msg.save();
+    console.log('已保存語音訊息，URL:', msg.url);
+    
+    io.to(groupId).emit('group message', {
+      groupId,
+      sender: req.user.username,
+      type: 'voice',
+      url: msg.url,
+      createdAt: msg.createdAt,
+      _id: msg._id,
+      optimisticId
+    });
+    
+    console.log('語音上傳成功，返回路徑:', msg.url);
+    res.json({ url: msg.url, _id: msg._id, optimisticId });
+  } catch (error) {
+    console.error('語音上傳過程中發生錯誤:', error);
+    res.status(500).json({ error: '語音上傳失敗', details: error.message });
+  }
 });
 
 // 多媒體訊息上傳 API
 app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req, res) => {
-  console.log('收到媒體上傳請求:', req.body);
-  console.log('文件信息:', req.file);
-  
-  if (!req.file) {
-    console.error('未收到文件');
-    return res.status(400).json({ error: '未收到檔案' });
+  try {
+    console.log('收到媒體上傳請求', req.file);
+    console.log('用戶ID:', req.user.id);
+    
+    if (!req.file) {
+      console.log('未收到媒體檔案');
+      return res.status(400).json({ error: '未收到檔案' });
+    }
+    
+    const { groupId, type, optimisticId } = req.body;
+    if (!groupId || !type) {
+      console.log('缺少必要參數:', { groupId, type });
+      return res.status(400).json({ error: '缺少群組ID或型別' });
+    }
+    
+    console.log('檔案信息:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      type: type,
+      url: req.file.path
+    });
+    
+    const Message = require('./models/Message');
+    const msg = new Message({
+      group: groupId,
+      sender: req.user.id,
+      type,
+      url: req.file.path, // 使用 Cloudinary URL
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      optimisticId
+    });
+    await msg.save();
+    console.log('已保存媒體訊息，URL:', msg.url);
+    
+    io.to(groupId).emit('group message', {
+      groupId,
+      sender: req.user.username,
+      type,
+      url: msg.url,
+      filename: msg.filename,
+      size: msg.size,
+      mimetype: msg.mimetype,
+      createdAt: msg.createdAt,
+      _id: msg._id,
+      readBy: [],
+      isRevoked: false,
+      optimisticId
+    });
+    
+    console.log('媒體上傳成功，返回路徑:', msg.url);
+    res.json({ url: msg.url, filename: msg.filename, size: msg.size, mimetype: msg.mimetype, _id: msg._id, optimisticId });
+  } catch (error) {
+    console.error('媒體上傳過程中發生錯誤:', error);
+    res.status(500).json({ error: '媒體上傳失敗', details: error.message });
   }
-  
-  const { groupId, type, optimisticId } = req.body; // 新增 optimisticId
-  if (!groupId || !type) {
-    console.error('缺少必要參數:', { groupId, type });
-    return res.status(400).json({ error: '缺少群組ID或型別' });
-  }
-  
-  console.log('媒體文件信息:', {
-    filename: req.file.filename || req.file.originalname,
-    originalname: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size,
-    type: type,
-    cloudinaryUrl: req.file.path
-  });
-  
-  const Message = require('./models/Message');
-  const msg = new Message({
-    group: groupId,
-    sender: req.user.id,
-    type,
-    url: req.file.path, // 使用 Cloudinary URL
-    filename: req.file.originalname, // 保留原始檔名（含副檔名）
-    size: req.file.size, // 新增
-    mimetype: req.file.mimetype, // 新增
-    optimisticId // 儲存 optimisticId
-  });
-  await msg.save();
-  io.to(groupId).emit('group message', {
-    groupId,
-    sender: req.user.username,
-    type,
-    url: msg.url,
-    filename: msg.filename,
-    size: msg.size, // 新增
-    mimetype: msg.mimetype, // 新增
-    createdAt: msg.createdAt,
-    _id: msg._id,
-    readBy: [],
-    isRevoked: false,
-    optimisticId // 推播 optimisticId
-  });
-  res.json({ url: msg.url, filename: msg.filename, size: msg.size, mimetype: msg.mimetype, _id: msg._id, optimisticId }); // 回傳 optimisticId
 });
 
 const encodeRFC5987ValueChars = str =>
