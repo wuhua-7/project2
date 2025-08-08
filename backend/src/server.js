@@ -5,30 +5,9 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const authRouter = require('./routes/auth');
 const authMiddleware = require('./middleware/auth');
-const multer = require('multer');
 const path = require('path');
-// 配置 multer 以支持文件副檔名
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    // 確保目錄存在
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // 根據 MIME 類型添加副檔名
-    const ext = file.mimetype.split('/')[1];
-    const timestamp = Date.now();
-    const random = Math.round(Math.random() * 1E9);
-    const filename = `${timestamp}-${random}.${ext}`;
-    console.log('生成文件名:', filename, 'MIME類型:', file.mimetype);
-    cb(null, filename);
-  }
-});
-
-const upload = multer({ storage });
+// 使用 Cloudinary 配置的 upload
+const { upload } = require('./config/cloudinary');
 const userRouter = require('./routes/user');
 const groupRouter = require('./routes/group');
 const PushLog = require('./models/PushLog');
@@ -307,10 +286,11 @@ app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req
   if (!groupId) return res.status(400).json({ error: '缺少群組ID' });
   
   console.log('語音文件信息:', {
-    filename: req.file.filename,
+    filename: req.file.filename || req.file.originalname,
     originalname: req.file.originalname,
     mimetype: req.file.mimetype,
-    size: req.file.size
+    size: req.file.size,
+    cloudinaryUrl: req.file.path
   });
   
   const Message = require('./models/Message');
@@ -318,7 +298,7 @@ app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req
     group: groupId,
     sender: req.user.id,
     type: 'voice',
-    url: `/uploads/${req.file.filename}`,
+    url: req.file.path, // 使用 Cloudinary URL
     optimisticId // 儲存 optimisticId
   });
   await msg.save();
@@ -351,29 +331,20 @@ app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req
   }
   
   console.log('媒體文件信息:', {
-    filename: req.file.filename,
+    filename: req.file.filename || req.file.originalname,
     originalname: req.file.originalname,
     mimetype: req.file.mimetype,
     size: req.file.size,
     type: type,
-    path: req.file.path
+    cloudinaryUrl: req.file.path
   });
-  
-  // 檢查文件是否成功保存
-  const filePath = req.file.path;
-  if (!fs.existsSync(filePath)) {
-    console.error('文件保存失敗，文件不存在:', filePath);
-    return res.status(500).json({ error: '文件保存失敗' });
-  }
-  
-  console.log('文件成功保存到:', filePath);
   
   const Message = require('./models/Message');
   const msg = new Message({
     group: groupId,
     sender: req.user.id,
     type,
-    url: `/uploads/${req.file.filename}`,
+    url: req.file.path, // 使用 Cloudinary URL
     filename: req.file.originalname, // 保留原始檔名（含副檔名）
     size: req.file.size, // 新增
     mimetype: req.file.mimetype, // 新增
