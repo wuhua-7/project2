@@ -1,0 +1,551 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const authRouter = require('./routes/auth');
+const authMiddleware = require('./middleware/auth');
+const path = require('path');
+// 使用 Cloudinary 配置的 upload
+const { upload } = require('./config/cloudinary');
+const userRouter = require('./routes/user');
+const groupRouter = require('./routes/group');
+const PushLog = require('./models/PushLog');
+const Message = require('./models/Message');
+const fs = require('fs');
+const https = require('https');
+const { execSync } = require('child_process');
+
+// 移除 https、fs、credentials、server.key/server.cert 相關程式碼
+
+const app = express();
+// 修復 CORS 配置，允許 Render 和本地開發
+app.use(cors({
+  origin: function(origin, callback) {
+    // 允許沒有 origin 的請求（如 Postman、服務器到服務器請求）
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    
+    // 允許的域名列表
+    const allowedOrigins = [
+      'https://project2-g1cl.onrender.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://192.168.1.121:3000'
+    ];
+    
+    // 檢查是否為允許的域名或包含 vercel.app、render.com
+    if (allowedOrigins.includes(origin) || 
+        origin.includes('vercel.app') || 
+        origin.includes('render.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')) {
+      console.log('CORS allowed origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // 暫時允許所有來源，用於調試
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
+}));
+// 處理 OPTIONS 預檢請求
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept, Origin, X-CSRF-Token');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 小時
+  res.status(200).end();
+});
+app.use(express.json());
+
+// 公開的 manifest.json 路由
+app.get('/manifest.json', (req, res) => {
+  res.json({
+    "name": "Chat App",
+    "short_name": "Chat",
+    "description": "A real-time chat application",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2196f3",
+    "icons": [
+      {
+        "src": "/assets/icon.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ]
+  });
+});
+
+// 添加公開的 assets 路由
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+
+// API 路由 - 需要認證
+app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
+app.use('/api/group', groupRouter);
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: function(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // 允許的域名列表
+      const allowedOrigins = [
+        'https://project2-g1cl.onrender.com',
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001',
+        'http://192.168.1.121:3000'
+      ];
+      
+      // 檢查是否為允許的域名或包含特定域名
+      if (allowedOrigins.includes(origin) || 
+          origin.includes('vercel.app') || 
+          origin.includes('render.com') ||
+          origin.includes('localhost') ||
+          origin.includes('127.0.0.1') ||
+          origin.includes('192.168.1.121')) {
+        console.log('Socket.IO CORS allowed origin:', origin);
+        callback(null, true);
+      } else {
+        console.log('Socket.IO CORS blocked origin:', origin);
+        callback(null, true); // 暫時允許所有來源，用於調試
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST']
+  }
+});
+app.set('io', io);
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('未授權'));
+  try {
+    const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'secretkey');
+    socket.user = payload;
+    next();
+  } catch {
+    next(new Error('JWT 驗證失敗'));
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // 新增：用戶連線時自動加入所有群組房間
+  socket.on('join group', async ({ groupIds }) => {
+    if (!Array.isArray(groupIds)) return;
+    groupIds.forEach(groupId => {
+      socket.join(groupId);
+      console.log('用戶', socket.user.username, '加入群組房間', groupId);
+    });
+  });
+
+  socket.on('chat message', (msg) => {
+    io.emit('chat message', msg); // 廣播訊息給所有用戶
+  });
+
+  socket.on('group message', async ({ groupId, content, type = 'text', url }) => {
+    if (!groupId || (!content && type !== 'voice')) return;
+    const Message = require('./models/Message');
+    let msg;
+    if (type === 'voice') {
+      msg = new Message({ group: groupId, sender: socket.user.id, type: 'voice', url });
+    } else {
+      msg = new Message({ group: groupId, sender: socket.user.id, content, type: 'text' });
+    }
+    await msg.save();
+    io.to(groupId).emit('group message', {
+      groupId,
+      sender: socket.user.username,
+      content,
+      createdAt: msg.createdAt,
+      type,
+      url
+    });
+    // Expo 推播通知
+    const Group = require('./models/Group');
+    const group = await Group.findById(groupId).populate('members');
+    const User = require('./models/User');
+    // --- 新增 @提及推播 ---
+    if (type === 'text' && content) {
+      // 偵測 @用戶名
+      const mentionedUsernames = (content.match(/@([\w\u4e00-\u9fa5]+)/g) || []).map(s => s.slice(1));
+      if (mentionedUsernames.length > 0) {
+        const mentionedUsers = await User.find({ username: { $in: mentionedUsernames } });
+        for (const u of mentionedUsers) {
+          if (
+            u._id.toString() !== socket.user.id &&
+            u.expoPushToken &&
+            (u.pushPreferences?.mention !== false)
+          ) {
+            sendExpoPush(u.expoPushToken, '你被提及', `${socket.user.username} 在群組中提及了你: ${content}`, { groupId, messageId: msg._id, type: 'mention' });
+          }
+        }
+      }
+    }
+    // --- 原有群組成員推播 ---
+    for (const member of group.members) {
+      if (
+        member._id.toString() !== socket.user.id &&
+        member.expoPushToken &&
+        ((type === 'voice' && member.pushPreferences?.voice !== false) ||
+         (type === 'text' && member.pushPreferences?.message !== false))
+      ) {
+        if (type === 'voice') {
+          sendExpoPush(member.expoPushToken, '新語音訊息', `${socket.user.username} 發送了一則語音訊息`, { groupId, messageId: msg._id, type: 'voice' });
+        } else {
+          sendExpoPush(member.expoPushToken, '新訊息', `${socket.user.username}: ${content}`, { groupId, messageId: msg._id, type: 'text' });
+        }
+      }
+    }
+  });
+
+  // 訊息已讀事件
+  socket.on('message read', async ({ groupId, messageIds }) => {
+    if (!groupId || !Array.isArray(messageIds)) return;
+    const Message = require('./models/Message');
+    const User = require('./models/User');
+    
+    for (const id of messageIds) {
+      if (mongoose.isValidObjectId(id)) {
+        await Message.findByIdAndUpdate(id, { $addToSet: { readBy: socket.user.id } });
+      }
+    }
+    
+    // 獲取用戶完整信息
+    const user = await User.findById(socket.user.id).select('username avatar');
+    
+    // 廣播已讀狀態給群組成員，包含完整用戶信息
+    io.to(groupId).emit('message read', { 
+      messageIds, 
+      userId: socket.user.id,
+      user: {
+        _id: user._id,
+        username: user.username,
+        avatar: user.avatar
+      }
+    });
+  });
+
+  // 訊息撤回
+  socket.on('revoke message', async ({ groupId, messageId }) => {
+    if (!groupId || !messageId) return;
+    const Message = require('./models/Message');
+    if (mongoose.isValidObjectId(messageId)) {
+      const msg = await Message.findById(messageId);
+      if (!msg || msg.sender.toString() !== socket.user.id) return;
+      msg.isRevoked = true;
+      await msg.save();
+      io.to(groupId).emit('message revoked', { messageId });
+    }
+  });
+
+  // 訊息編輯
+  socket.on('edit message', async ({ groupId, messageId, newContent }) => {
+    if (!groupId || !messageId || !newContent) return;
+    const Message = require('./models/Message');
+    if (mongoose.isValidObjectId(messageId)) {
+      const msg = await Message.findById(messageId);
+      if (!msg || msg.sender.toString() !== socket.user.id || msg.isRevoked) return;
+      msg.content = newContent;
+      msg.editedAt = new Date();
+      await msg.save();
+      io.to(groupId).emit('message edited', { messageId, newContent, editedAt: msg.editedAt });
+    }
+  });
+
+  // 一對一語音通話信令事件
+  socket.on('call:invite', ({ from, to, groupId }) => {
+    console.log('call:invite', { from, to, groupId });
+    io.toUser?.(to)?.emit('call:invite', { from, to, groupId });
+  });
+  socket.on('call:accept', ({ from, to, groupId }) => {
+    console.log('call:accept', { from, to, groupId });
+    io.toUser?.(to)?.emit('call:accept', { from, to, groupId });
+  });
+  socket.on('call:reject', ({ from, to, groupId, reason }) => {
+    console.log('call:reject', { from, to, groupId, reason });
+    io.toUser?.(to)?.emit('call:reject', { from, to, groupId, reason });
+  });
+  socket.on('call:end', ({ from, to, groupId, reason }) => {
+    console.log('call:end', { from, to, groupId, reason });
+    io.toUser?.(to)?.emit('call:end', { from, to, groupId, reason });
+  });
+  socket.on('call:signal', ({ from, to, groupId, data }) => {
+    console.log('call:signal', { from, to, groupId, data });
+    io.toUser?.(to)?.emit('call:signal', { from, to, groupId, data });
+  });
+
+  // 群組通話信令事件
+  socket.on('group-call:invite', ({ groupId, type }) => {
+    console.log('group-call:invite', { groupId, type, from: socket.user.username });
+    // 廣播給群組內所有其他成員
+    socket.to(groupId).emit('group-call:invite', { 
+      groupId, 
+      type, 
+      from: socket.user.id,
+      fromUsername: socket.user.username 
+    });
+  });
+
+  socket.on('group-call:join', ({ groupId, userId }) => {
+    console.log('group-call:join', { groupId, userId });
+    // 通知群組內所有成員有新成員加入
+    io.to(groupId).emit('group-call:member-joined', { 
+      groupId, 
+      userId,
+      username: socket.user.username 
+    });
+  });
+
+  socket.on('group-call:leave', ({ groupId, userId }) => {
+    console.log('group-call:leave', { groupId, userId });
+    // 通知群組內所有成員有成員離開
+    io.to(groupId).emit('group-call:member-left', { 
+      groupId, 
+      userId 
+    });
+  });
+
+  socket.on('group-call:signal', ({ groupId, targetUserId, signal }) => {
+    console.log('group-call:signal', { groupId, from: socket.user.id, to: targetUserId });
+    // 轉發信令給目標用戶
+    const targetSocket = io.toUser(targetUserId);
+    if (targetSocket) {
+      targetSocket.emit('group-call:signal', {
+        groupId,
+        fromUserId: socket.user.id,
+        fromUsername: socket.user.username,
+        signal
+      });
+    }
+  });
+
+  socket.on('group-call:end', ({ groupId }) => {
+    console.log('group-call:end', { groupId, from: socket.user.username });
+    // 通知群組內所有成員通話結束
+    io.to(groupId).emit('group-call:ended', { groupId });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// 輔助函式：根據 userId 找 socket
+io.toUser = function(userId) {
+  for (const [id, s] of io.of('/').sockets) {
+    if (s.user && s.user.id === userId) return s;
+  }
+  return null;
+};
+
+// 語音訊息上傳 API
+app.post('/api/upload/voice', authMiddleware, upload.single('voice'), async (req, res) => {
+  try {
+    console.log('收到語音上傳請求', req.file);
+    console.log('用戶ID:', req.user.id);
+    
+    if (!req.file) {
+      console.log('未收到語音檔案');
+      return res.status(400).json({ error: '未收到語音檔案' });
+    }
+    
+    const { groupId, optimisticId } = req.body;
+    if (!groupId) {
+      console.log('缺少群組ID');
+      return res.status(400).json({ error: '缺少群組ID' });
+    }
+    
+    console.log('檔案信息:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      url: req.file.path
+    });
+    
+    const Message = require('./models/Message');
+    const msg = new Message({
+      group: groupId,
+      sender: req.user.id,
+      type: 'voice',
+      url: req.file.path, // 使用 Cloudinary URL
+      optimisticId // 儲存 optimisticId
+    });
+    await msg.save();
+    console.log('已保存語音訊息，URL:', msg.url);
+    
+    io.to(groupId).emit('group message', {
+      groupId,
+      sender: req.user.username,
+      type: 'voice',
+      url: msg.url,
+      createdAt: msg.createdAt,
+      _id: msg._id,
+      optimisticId
+    });
+    
+    console.log('語音上傳成功，返回路徑:', msg.url);
+    res.json({ url: msg.url, _id: msg._id, optimisticId });
+  } catch (error) {
+    console.error('語音上傳過程中發生錯誤:', error);
+    res.status(500).json({ error: '語音上傳失敗', details: error.message });
+  }
+});
+
+// 多媒體訊息上傳 API
+app.post('/api/upload/media', authMiddleware, upload.single('media'), async (req, res) => {
+  try {
+    console.log('收到媒體上傳請求', req.file);
+    console.log('用戶ID:', req.user.id);
+    
+    if (!req.file) {
+      console.log('未收到媒體檔案');
+      return res.status(400).json({ error: '未收到檔案' });
+    }
+    
+    const { groupId, type, optimisticId } = req.body;
+    if (!groupId || !type) {
+      console.log('缺少必要參數:', { groupId, type });
+      return res.status(400).json({ error: '缺少群組ID或型別' });
+    }
+    
+    console.log('檔案信息:', {
+      filename: req.file.filename,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      type: type,
+      url: req.file.path
+    });
+    
+    const Message = require('./models/Message');
+    const msg = new Message({
+      group: groupId,
+      sender: req.user.id,
+      type,
+      url: req.file.path, // 使用 Cloudinary URL
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      optimisticId
+    });
+    await msg.save();
+    console.log('已保存媒體訊息，URL:', msg.url);
+    
+    io.to(groupId).emit('group message', {
+      groupId,
+      sender: req.user.username,
+      type,
+      url: msg.url,
+      filename: msg.filename,
+      size: msg.size,
+      mimetype: msg.mimetype,
+      createdAt: msg.createdAt,
+      _id: msg._id,
+      readBy: [],
+      isRevoked: false,
+      optimisticId
+    });
+    
+    console.log('媒體上傳成功，返回路徑:', msg.url);
+    res.json({ url: msg.url, filename: msg.filename, size: msg.size, mimetype: msg.mimetype, _id: msg._id, optimisticId });
+  } catch (error) {
+    console.error('媒體上傳過程中發生錯誤:', error);
+    res.status(500).json({ error: '媒體上傳失敗', details: error.message });
+  }
+});
+
+const encodeRFC5987ValueChars = str =>
+  encodeURIComponent(str).
+    replace(/'/g, '%27').
+    replace(/\(/g, '%28').
+    replace(/\)/g, '%29').
+    replace(/\*/g, '%2A');
+
+// 下載 API 不驗證
+app.get('/api/download/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(messageId)) return res.status(400).send('Invalid messageId');
+  const msg = await Message.findById(messageId);
+  if (!msg || !msg.url || !msg.filename) return res.status(404).send('File not found');
+  const filePath = path.join(__dirname, msg.url.replace('/uploads/', 'uploads/'));
+  const filename = msg.filename;
+  const encoded = encodeURIComponent(filename);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${filename}"; filename*=UTF-8''${encoded}`
+  );
+  res.download(filePath, filename);
+});
+
+// 測試文件上傳功能
+app.get('/test-upload', (req, res) => {
+  const uploadDir = path.join(__dirname, '..', 'uploads');
+  const files = fs.readdirSync(uploadDir);
+  res.json({
+    message: 'Upload test endpoint',
+    uploadDir: uploadDir,
+    fileCount: files.length,
+    files: files.slice(0, 10) // 只顯示前10個文件
+  });
+});
+
+// 健康檢查端點
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// 其他 API 路由、靜態檔案、首頁
+app.get('/', (req, res) => {
+  res.send('Chat server is running!');
+});
+
+const PORT = process.env.PORT || 3001;
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('MongoDB connected');
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`HTTP Server running on http://0.0.0.0:${PORT}`);
+      console.log('Listening on 0.0.0.0:' + PORT);
+    });
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`HTTP Server running on http://0.0.0.0:${PORT} (MongoDB 連線失敗)`);
+      console.log('Listening on 0.0.0.0:' + PORT);
+    });
+});
+
+// // 如需同時啟動 HTTP 伺服器，可保留以下註解
+// const http = require('http');
+// const httpServer = http.createServer(app);
+// httpServer.listen(3000, () => {
+//   console.log('HTTP Server running on http://localhost:3000');
+// });
