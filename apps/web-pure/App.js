@@ -1211,6 +1211,9 @@ function App() {
     buttonPrimary: '#238636',
     buttonSecondary: '#21262d',
     buttonDanger: '#da3633',
+    buttonSuccess: '#238636',
+    buttonInfo: '#1f6feb',
+    buttonWarning: '#bb8009',
     cardBg: '#161b22',
     headerBg: '#010409',
     textSecondary: '#8b949e',
@@ -1222,6 +1225,8 @@ function App() {
     groupItemBg: '#161b22',
     groupItemHover: '#21262d',
     groupItemActive: '#1f6feb',
+    tabActive: '#1f6feb',
+    tabInactive: '#21262d',
   } : {
     // 淺色模式
     background: '#ffffff',
@@ -1235,6 +1240,9 @@ function App() {
     buttonPrimary: '#1f883d',
     buttonSecondary: '#f6f8fa',
     buttonDanger: '#cf222e',
+    buttonSuccess: '#1f883d',
+    buttonInfo: '#0969da',
+    buttonWarning: '#bf8700',
     cardBg: '#ffffff',
     headerBg: '#f6f8fa',
     textSecondary: '#57606a',
@@ -1246,6 +1254,8 @@ function App() {
     groupItemBg: '#ffffff',
     groupItemHover: '#f6f8fa',
     groupItemActive: '#ddf4ff',
+    tabActive: '#ddf4ff',
+    tabInactive: '#f6f8fa',
   };
 
   // 密碼強度提示
@@ -2057,9 +2067,9 @@ function App() {
         {/* 新增 Tab 切換 */}
         {currentGroup && (
           <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? '#bde0fe' : '#eee' }}>聊天</button>
-            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? '#bde0fe' : '#eee' }}>媒體牆</button>
-            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? '#bde0fe' : '#eee' }}>檔案櫃</button>
+            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>聊天</button>
+            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>媒體牆</button>
+            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>檔案櫃</button>
           </div>
         )}
         {/* 根據 Tab 顯示內容 */}
@@ -2080,7 +2090,48 @@ function App() {
             {/* 群組成員按鈕區塊，永遠顯示在搜尋框下方、訊息區上方 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {currentGroupObj && hasGroupMembers && (
-                <div style={{ marginTop: 12 }}>
+                <button 
+                  onClick={() => setShowGroupMemberList(true)}
+                  style={{ 
+                    marginTop: 12, 
+                    width: '100%',
+                    padding: '12px',
+                    background: theme === 'dark' ? '#2a2a2a' : '#f5f5f5',
+                    border: `1px solid ${theme === 'dark' ? '#444' : '#ddd'}`,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = theme === 'dark' ? '#333' : '#e8e8e8';
+                    e.currentTarget.style.transform = 'translateX(2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = theme === 'dark' ? '#2a2a2a' : '#f5f5f5';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={theme === 'dark' ? '#aaa' : '#666'} strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span style={{ fontSize: 14, color: theme === 'dark' ? '#ddd' : '#333', fontWeight: 500 }}>
+                      群組成員 ({groupMembers.length})
+                    </span>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme === 'dark' ? '#aaa' : '#666'} strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              )}
+              {currentGroupObj && hasGroupMembers && (
+                <div style={{ display: 'none' }}>
                   <div style={{ fontSize: 14, color: '#666', marginBottom: 8 }}>群組成員 ({groupMembers.length})</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {groupMembers.slice(0, 3).map((u, idx) => (
@@ -2123,11 +2174,11 @@ function App() {
                     群組資訊
                   </button>
                 )}
-                <button style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
+                <button style={{ background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path></svg>
                   群組語音
                 </button>
-                <button style={{ background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
+                <button style={{ background: themeStyles.buttonSuccess, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect><polygon points="23 7 16 12 23 17 23 7"></polygon></svg>
                   群組視訊
                 </button>
@@ -2158,14 +2209,14 @@ function App() {
                       {recordedUrl && <a href={recordedUrl} download="recording.webm" style={{ marginLeft: 8 }}>下載錄音</a>}
                     </div>
                   )}
-                  {callState.status === 'calling' && <button onClick={handleCallEnd} style={{ marginTop: 24, background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>掛斷</button>}
+                  {callState.status === 'calling' && <button onClick={handleCallEnd} style={{ marginTop: 24, background: themeStyles.buttonDanger, color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>掛斷</button>}
                   {callState.status === 'incoming' && (
                     <div style={{ marginTop: 24 }}>
-                      <button onClick={handleCallAccept} style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px', marginRight: 12 }}>接聽</button>
-                      <button onClick={handleCallReject} style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>拒絕</button>
+                      <button onClick={handleCallAccept} style={{ background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px', marginRight: 12 }}>接聽</button>
+                      <button onClick={handleCallReject} style={{ background: themeStyles.buttonDanger, color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>拒絕</button>
                     </div>
                   )}
-                  {callState.status === 'accepted' && <button onClick={handleCallEnd} style={{ marginTop: 24, background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>掛斷</button>}
+                  {callState.status === 'accepted' && <button onClick={handleCallEnd} style={{ marginTop: 24, background: themeStyles.buttonDanger, color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px' }}>掛斷</button>}
                 </div>
               </div>
             )}
@@ -2235,10 +2286,10 @@ function App() {
                               )}
                               {/* 已讀名單彈窗 */}
                               {openReadByMsgId === msg._id && (
-                                <div style={{ position: 'fixed', left: readByPopupPos?.x || 120, top: readByPopupPos?.y || 120, background: '#fff', border: '1px solid #ccc', borderRadius: 8, boxShadow: '0 2px 12px #0003', zIndex: 10001, minWidth: 160, padding: 12 }}>
-                                  <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15, color: '#1976d2', textAlign: 'center' }}>已讀名單</div>
+                                <div style={{ position: 'fixed', left: readByPopupPos?.x || 120, top: readByPopupPos?.y || 120, background: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`, borderRadius: 8, boxShadow: '0 2px 12px #0003', zIndex: 10001, minWidth: 160, padding: 12 }}>
+                                  <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 15, color: themeStyles.buttonInfo, textAlign: 'center' }}>已讀名單</div>
                                   {readByUsers.length === 0 ? (
-                                    <div style={{ color: '#888', fontSize: 14, textAlign: 'center' }}>無其他人已讀</div>
+                                    <div style={{ color: themeStyles.textSecondary, fontSize: 14, textAlign: 'center' }}>無其他人已讀</div>
                                   ) : (
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
                                       {readByUsers.map(user => (
@@ -2246,12 +2297,12 @@ function App() {
                                           <img
                                             src={getUserAvatar(user.username, groupInfo, profile)}
                                             alt={user.username}
-                                            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginBottom: 4 }}
+                                            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${themeStyles.border}`, marginBottom: 4 }}
                                             onError={(e) => {
                                               e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
                                             }}
                                           />
-                                          <span style={{ fontSize: 13, color: '#222', textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
+                                          <span style={{ fontSize: 13, color: themeStyles.color, textAlign: 'center', wordBreak: 'break-all' }}>{user.username}</span>
                                         </div>
                                       ))}
                                     </div>
@@ -2269,7 +2320,8 @@ function App() {
                                 : themeStyles.bubbleOther,
                               color: isMe ? (theme === 'dark' ? '#fff' : '#222') : '#222',
                               borderRadius: 16,
-                              padding: '8px 14px 22px 14px',
+                              padding: '10px 16px 24px 16px',
+                              minWidth: 80,
                               position: 'relative',
                               boxShadow: hoveredMsgId === msg._id ? '0 4px 16px #2196f355' : '0 1px 2px #0001',
                               marginLeft: isMe ? 0 : 8,
@@ -2456,8 +2508,16 @@ function App() {
                                 )}
                               </>
                             )}
-                            {/* 時間戳 */}
-                            <span style={{ position: 'absolute', right: 10, bottom: 2, fontSize: 11, color: '#aaa' }}>{formatTime(msg.createdAt)}</span>
+                            {/* 時間戳 - 改善短訊息時的顯示 */}
+                            <span style={{ 
+                              position: 'absolute', 
+                              right: 10, 
+                              bottom: 2, 
+                              fontSize: 11, 
+                              color: theme === 'dark' ? '#999' : '#aaa',
+                              whiteSpace: 'nowrap',
+                              paddingLeft: 8
+                            }}>{formatTime(msg.createdAt)}</span>
                           </div>
                         </div>
                         {/* 操作選單（右鍵觸發） */}
@@ -2576,8 +2636,8 @@ function App() {
                     <span>{m.username} {role}</span>
                     {m._id !== userId && (
                       <>
-                        <button style={{ marginLeft: 8, background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }} onClick={() => handleCallInvite(m._id)}>語音</button>
-                        <button style={{ marginLeft: 4, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }} onClick={() => handleVideoCallInvite(m._id)}>視訊</button>
+                        <button style={{ marginLeft: 8, background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }} onClick={() => handleCallInvite(m._id)}>語音</button>
+                        <button style={{ marginLeft: 4, background: themeStyles.buttonSuccess, color: '#fff', border: 'none', borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 12 }} onClick={() => handleVideoCallInvite(m._id)}>視訊</button>
                       </>
                     )}
                     {/* 管理員操作按鈕... */}
@@ -2807,9 +2867,9 @@ function App() {
                   }
                 }}
               />
-              <button style={{ marginBottom: 8, background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
+              <button style={{ marginBottom: 8, background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={() => document.getElementById('avatar-file-input').click()}>選擇頭像</button>
               {avatarFile && (
-                <button style={{ marginBottom: 8, background: '#4caf50', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
+                <button style={{ marginBottom: 8, background: themeStyles.buttonSuccess, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }} onClick={handleAvatarUpload}>上傳頭像</button>
               )}
               {avatarFile && (
                 <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>已選擇文件，請點擊上傳</div>
@@ -2866,8 +2926,8 @@ function App() {
               </ReactCrop>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <button onClick={() => setShowCropModal(false)} style={{ padding: '8px 16px', background: '#f5f5f5', border: 'none', borderRadius: 4, cursor: 'pointer' }}>取消</button>
-              <button onClick={handleCropComplete} style={{ padding: '8px 16px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>確認裁切</button>
+              <button onClick={() => setShowCropModal(false)} style={{ padding: '8px 16px', background: themeStyles.buttonSecondary, color: themeStyles.color, border: 'none', borderRadius: 4, cursor: 'pointer' }}>取消</button>
+              <button onClick={handleCropComplete} style={{ padding: '8px 16px', background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>確認裁切</button>
             </div>
           </div>
         </div>
@@ -2898,30 +2958,30 @@ function App() {
       {/* 群組通話彈窗 */}
       {groupCallState.visible && (
         <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, minWidth: 480, maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
-            <button onClick={handleLeaveGroupCall} style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>✕</button>
+          <div style={{ background: themeStyles.cardBg, borderRadius: 16, padding: 32, minWidth: 480, maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+            <button onClick={handleLeaveGroupCall} style={{ position: 'absolute', top: 16, right: 16, fontSize: 24, background: 'none', border: 'none', cursor: 'pointer', color: themeStyles.textSecondary }}>✕</button>
 
-            <h3 style={{ margin: '0 0 24px 0', fontSize: 24, color: '#1976d2' }}>
+            <h3 style={{ margin: '0 0 24px 0', fontSize: 24, color: themeStyles.buttonInfo }}>
               群組{groupCallState.type === 'video' ? '視訊' : '語音'}通話
             </h3>
 
             {/* 成員列表 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
               {groupCallState.members.length === 0 && (
-                <div style={{ color: '#888', gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ color: themeStyles.textSecondary, gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0' }}>
                   等待成員加入...
                 </div>
               )}
 
               {groupCallState.members.map(member => (
                 <div key={member.userId} style={{
-                  background: '#f5f5f5',
+                  background: theme === 'dark' ? '#21262d' : '#f5f5f5',
                   borderRadius: 12,
                   padding: 16,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  border: member.userId === userId ? '2px solid #1976d2' : '2px solid transparent'
+                  border: member.userId === userId ? `2px solid ${themeStyles.buttonInfo}` : '2px solid transparent'
                 }}>
                   {groupCallState.type === 'video' && groupCallState.streams[member.userId] ? (
                     <video
@@ -2947,7 +3007,7 @@ function App() {
                       width: '100%',
                       height: 120,
                       borderRadius: 8,
-                      background: '#1976d2',
+                      background: themeStyles.buttonInfo,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2963,14 +3023,14 @@ function App() {
                         justifyContent: 'center',
                         fontSize: 24,
                         fontWeight: 'bold',
-                        color: '#1976d2'
+                        color: themeStyles.buttonInfo
                       }}>
                         {member.username ? member.username[0].toUpperCase() : '?'}
                       </div>
                     </div>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#333', textAlign: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: themeStyles.color, textAlign: 'center' }}>
                     {member.username}
                     {member.userId === userId && ' (你)'}
                   </div>
