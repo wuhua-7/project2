@@ -1,0 +1,36 @@
+{
+  "name": "web-pure",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "web-https": "expo start --web --https --key ../server.key --cert ../server.cert",
+    "build": "npx expo export:web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
+    "dom-helpers": "^6.0.1",
+    "expo": "^50.0.0",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-easy-crop": "^5.5.0",
+    "react-image-crop": "^11.0.10",
+    "react-native": "0.79.5",
+    "react-native-web": "^0.20.0",
+    "react-transition-group": "^4.4.5",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@expo/webpack-config": "^19.0.1",
+    "@types/react": "~19.0.10",
+    "crypto-browserify": "^3.12.1",
+    "stream-browserify": "^3.0.0",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}

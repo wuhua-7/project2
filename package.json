@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "prestart": "openssl req -nodes -new -x509 -keyout server.key -out server.cert -subj '/CN=localhost' -days 365 || true",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "selfsigned": "^2.4.1",
+    "socket.io-client": "^4.8.1"
+  }
+}
