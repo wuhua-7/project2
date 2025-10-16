@@ -580,12 +580,12 @@ function App() {
     const isVideo = callState.type === 'video';
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
     setLocalStream(stream);
-    
+
     // 設置本地視訊預覽
     if (isVideo && localVideoRef.current) {
       localVideoRef.current.srcObject = stream;
     }
-    
+
     if (isVideo) {
       stream.getVideoTracks()[0].enabled = true;
       pc.addTrack(stream.getVideoTracks()[0], stream);
@@ -731,12 +731,12 @@ function App() {
       setMessages([]);
       setHasMoreMessages(true);
       fetchMessages(currentGroup);
-      // 延遲滾動確保訊息已渲染
+      // 延遲滾動確保訊息已渲染，增加延遲時間
       setTimeout(() => {
         if (messagesBoxRef.current) {
           messagesBoxRef.current.scrollTop = messagesBoxRef.current.scrollHeight;
         }
-      }, 100);
+      }, 300);
     }
   }, [currentGroup, token, search]);
 
@@ -1199,7 +1199,7 @@ function App() {
 
   // 完整的主題系統
   const themeStyles = theme === 'dark' ? {
-    // 深色模式
+    // 深色模式 - 調整按鈕顏色使其更暗
     background: '#0d1117',
     color: '#e6edf3',
     bubbleMe: '#1f6feb',
@@ -1208,12 +1208,12 @@ function App() {
     border: '#30363d',
     sidebarBg: '#010409',
     sidebarHover: '#161b22',
-    buttonPrimary: '#238636',
+    buttonPrimary: '#1a7f37',
     buttonSecondary: '#21262d',
-    buttonDanger: '#da3633',
-    buttonSuccess: '#238636',
-    buttonInfo: '#1f6feb',
-    buttonWarning: '#bb8009',
+    buttonDanger: '#b62324',
+    buttonSuccess: '#1a7f37',
+    buttonInfo: '#0969da',
+    buttonWarning: '#9a6700',
     cardBg: '#161b22',
     headerBg: '#010409',
     textSecondary: '#8b949e',
@@ -2090,10 +2090,10 @@ function App() {
             {/* 群組成員按鈕區塊，永遠顯示在搜尋框下方、訊息區上方 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {currentGroupObj && hasGroupMembers && (
-                <button 
+                <button
                   onClick={() => setShowGroupMemberList(true)}
-                  style={{ 
-                    marginTop: 12, 
+                  style={{
+                    marginTop: 12,
                     width: '100%',
                     padding: '12px',
                     background: theme === 'dark' ? '#2a2a2a' : '#f5f5f5',
@@ -2155,19 +2155,19 @@ function App() {
               {/* 群組功能按鈕 */}
               <div style={{ display: 'flex', gap: 8, marginLeft: 12 }}>
                 {currentGroup && (
-                  <button 
-                    onClick={() => fetchGroupInfo(currentGroup)} 
-                    style={{ 
-                      background: themeStyles.buttonSecondary, 
-                      color: themeStyles.color, 
-                      border: `1px solid ${themeStyles.border}`, 
-                      borderRadius: 6, 
-                      padding: '6px 16px', 
-                      cursor: 'pointer', 
-                      fontSize: 14, 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 6 
+                  <button
+                    onClick={() => fetchGroupInfo(currentGroup)}
+                    style={{
+                      background: themeStyles.buttonSecondary,
+                      color: themeStyles.color,
+                      border: `1px solid ${themeStyles.border}`,
+                      borderRadius: 6,
+                      padding: '6px 16px',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
                     }}
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -2254,18 +2254,18 @@ function App() {
                         {/* 頭像 */}
                         {renderAvatar(msg.sender, groupInfo, profile, isMe)}
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
-                        <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end' }}>
-                          {/* 已讀標籤（泡泡內側）- 只在最後一則訊息顯示 */}
-                          {isLastMessage && readByUsers.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 4 }}>
+                          {/* 已讀標籤（泡泡外側）- 只在最後一則訊息且是自己的訊息時顯示 */}
+                          {isLastMessage && isMe && readByUsers.length > 0 && (
                             <div
                               ref={el => { if (el) readByRefs.current[msg._id] = el; }}
-                              style={{ display: 'flex', alignItems: 'flex-end', gap: 4, margin: isMe ? '0 8px 0 0' : '0 0 0 8px', alignSelf: 'flex-end', minWidth: 24, cursor: 'pointer' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 2, alignSelf: 'flex-end', minWidth: 24, cursor: 'pointer', marginBottom: 4 }}
                               onClick={e => {
                                 e.stopPropagation();
                                 setOpenReadByMsgId(msg._id === openReadByMsgId ? null : msg._id);
                                 if (msg._id !== openReadByMsgId && readByRefs.current[msg._id]) {
                                   const rect = readByRefs.current[msg._id].getBoundingClientRect();
-                                  setReadByPopupPos({ x: rect.right + 6, y: rect.top });
+                                  setReadByPopupPos({ x: rect.left - 170, y: rect.top });
                                 }
                               }}
                             >
@@ -2509,11 +2509,11 @@ function App() {
                               </>
                             )}
                             {/* 時間戳 - 改善短訊息時的顯示 */}
-                            <span style={{ 
-                              position: 'absolute', 
-                              right: 10, 
-                              bottom: 2, 
-                              fontSize: 11, 
+                            <span style={{
+                              position: 'absolute',
+                              right: 10,
+                              bottom: 2,
+                              fontSize: 11,
                               color: theme === 'dark' ? '#999' : '#aaa',
                               whiteSpace: 'nowrap',
                               paddingLeft: 8
