@@ -316,16 +316,39 @@ io.on('connection', (socket) => {
   });
 
   socket.on('group-call:join', ({ groupId, userId, type }) => {
-    console.log('group-call:join', { groupId, userId });
-    // 通知群組內所有成員有新成員加入
-    io.to(groupId).emit('group-call:member-joined', { 
+    console.log('group-call:join', { groupId, userId, username: socket.user.username });
+    
+    // 通知群組內其他成員有新成員加入（不包括自己）
+    socket.to(groupId).emit('group-call:member-joined', { 
       groupId, 
       userId,
       username: socket.user.username 
     });
     
-    // 更新通話狀態
+    // 獲取當前房間內的所有成員並發送給新加入者
     const room = io.sockets.adapter.rooms.get(groupId);
+    if (room) {
+      const existingMembers = [];
+      for (const socketId of room) {
+        const memberSocket = io.sockets.sockets.get(socketId);
+        if (memberSocket && memberSocket.user && memberSocket.user.id !== userId) {
+          existingMembers.push({
+            userId: memberSocket.user.id,
+            username: memberSocket.user.username
+          });
+        }
+      }
+      
+      // 發送現有成員列表給新加入者
+      socket.emit('group-call:existing-members', {
+        groupId,
+        members: existingMembers
+      });
+      
+      console.log('發送現有成員列表給新用戶:', existingMembers);
+    }
+    
+    // 更新通話狀態
     const memberCount = room ? room.size : 1;
     io.emit('group-call:status', {
       groupId,

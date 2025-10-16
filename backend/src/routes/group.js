@@ -168,9 +168,9 @@ router.get('/info/:groupId', authMiddleware, async (req, res) => {
   const { groupId } = req.params;
   if (!mongoose.Types.ObjectId.isValid(groupId)) return res.status(400).json({ error: '無效的群組ID' });
   const group = await Group.findById(groupId)
-    .populate('owner', 'username avatar')
-    .populate('admins', 'username avatar')
-    .populate('members', 'username avatar'); // 確保 members 有 username 和 avatar
+    .populate('owner', 'username avatar discriminator')
+    .populate('admins', 'username avatar discriminator')
+    .populate('members', 'username avatar discriminator'); // 確保 members 有完整信息
   if (!group) return res.status(404).json({ error: '群組不存在' });
   res.json({
     _id: group._id,

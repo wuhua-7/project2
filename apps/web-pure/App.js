@@ -598,6 +598,22 @@ function App() {
       }
     });
 
+    // 接收現有成員列表（當加入通話時）
+    socket.on('group-call:existing-members', ({ groupId, members }) => {
+      if (groupId === currentGroup) {
+        console.log('收到現有成員列表:', members);
+        setGroupCallState(prev => {
+          // 合併現有成員，避免重複
+          const existingIds = new Set(prev.members.map(m => m.userId));
+          const newMembers = members.filter(m => !existingIds.has(m.userId));
+          return {
+            ...prev,
+            members: [...prev.members, ...newMembers]
+          };
+        });
+      }
+    });
+
     socket.on('group-call:signal', async ({ groupId, fromUserId, fromUsername, signal }) => {
       if (groupId === currentGroup && groupCallState.visible) {
         console.log('收到群組通話信令', { groupId, fromUserId, signal });
@@ -631,6 +647,7 @@ function App() {
       socket.off('group-call:invite');
       socket.off('group-call:member-joined');
       socket.off('group-call:member-left');
+      socket.off('group-call:existing-members');
       socket.off('group-call:signal');
       socket.off('group-call:ended');
       socket.off('group-call:status');
@@ -2054,9 +2071,18 @@ function App() {
       }
     });
 
-    socket.emit('group-call:leave', { groupId: currentGroup, userId });
+    // 檢查是否是最後一人，如果是則結束通話
+    const isLastPerson = groupCallState.members.length <= 1;
+
+    if (isLastPerson) {
+      socket.emit('group-call:end', { groupId: currentGroup });
+      console.log('最後一人離開，結束通話', { groupId: currentGroup });
+    } else {
+      socket.emit('group-call:leave', { groupId: currentGroup, userId });
+      console.log('離開群組通話', { groupId: currentGroup, remainingMembers: groupCallState.members.length - 1 });
+    }
+
     setGroupCallState({ type: '', members: [], streams: {}, visible: false, isCaller: false });
-    console.log('離開群組通話', { groupId: currentGroup });
   };
 
   const handleEndGroupCall = () => {
@@ -3124,7 +3150,7 @@ function App() {
                         return;
                       }
                       try {
-                        const res = await fetch(`${API_URL}/api/user/update-profile`, {
+                        const res = await safeFetch(`${API_URL}/api/user/update-profile`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                           body: JSON.stringify({ username: newUsername })
@@ -3139,7 +3165,8 @@ function App() {
                           alert(data.error || '更新失敗');
                         }
                       } catch (err) {
-                        alert('更新失敗');
+                        console.error('更新用戶名失敗:', err);
+                        alert('更新失敗：' + (err.message || '請重新登入'));
                       }
                     }}>儲存</button>
                     <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingUsername(false)}>取消</button>
@@ -3168,7 +3195,7 @@ function App() {
                         return;
                       }
                       try {
-                        const res = await fetch(`${API_URL}/api/user/update-profile`, {
+                        const res = await safeFetch(`${API_URL}/api/user/update-profile`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                           body: JSON.stringify({ discriminator: newDiscriminator })
@@ -3183,7 +3210,8 @@ function App() {
                           alert(data.error || '更新失敗（ID可能已被使用）');
                         }
                       } catch (err) {
-                        alert('更新失敗');
+                        console.error('更新ID失敗:', err);
+                        alert('更新失敗：' + (err.message || '請重新登入'));
                       }
                     }}>儲存</button>
                     <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingDiscriminator(false)}>取消</button>
