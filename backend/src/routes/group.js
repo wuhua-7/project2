@@ -55,6 +55,24 @@ router.post('/invite', authMiddleware, async (req, res) => {
   if (group.members.includes(realUserId)) return res.status(409).json({ error: '用戶已在群組中' });
   group.members.push(realUserId);
   await group.save();
+  
+  // 實時推送給被邀請者
+  const io = req.app.get('io');
+  const invitedUser = await User.findById(realUserId);
+  if (io && invitedUser) {
+    // 獲取完整群組信息
+    const populatedGroup = await Group.findById(groupId).populate('members', 'username avatar discriminator');
+    io.toUser?.(realUserId.toString())?.emit('group:invited', {
+      group: {
+        _id: populatedGroup._id,
+        name: populatedGroup.name,
+        members: populatedGroup.members,
+        owner: populatedGroup.owner,
+        admins: populatedGroup.admins
+      }
+    });
+  }
+  
   res.json({ message: '邀請成功' });
 });
 

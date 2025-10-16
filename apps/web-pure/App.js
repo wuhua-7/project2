@@ -86,34 +86,34 @@ function renderContentWithMention(content, username, group) {
   return parts;
 }
 
-// 新增：取得用戶頭像
+// 新增：取得用戶頭像（優化版）
 function getUserAvatar(username, groupInfo, profile) {
-  // 優先使用 profile 中的頭像（當前用戶）
+  const defaultAvatar = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+
+  // 輔助函數：處理頭像URL
+  const processAvatarUrl = (avatar) => {
+    if (!avatar || avatar === '' || avatar === '/uploads/2.jpeg') return null;
+    if (avatar.startsWith('http')) return avatar;
+    return API_URL + avatar;
+  };
+
+  // 1. 優先使用 profile 中的頭像（當前用戶）
   if (profile && username === profile.username) {
-    if (profile.avatar && profile.avatar !== '' && profile.avatar !== '/uploads/2.jpeg') {
-      // 檢查是否為 Cloudinary URL
-      if (profile.avatar.startsWith('http')) {
-        return profile.avatar;
-      }
-      return API_URL + profile.avatar;
-    }
-    return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+    const avatarUrl = processAvatarUrl(profile.avatar);
+    if (avatarUrl) return avatarUrl;
   }
 
-  // 從群組信息中查找用戶頭像
+  // 2. 從群組信息中查找用戶頭像
   if (groupInfo && Array.isArray(groupInfo.members)) {
     const user = groupInfo.members.find(u => u && u.username === username);
-    if (user && user.avatar && user.avatar !== '' && user.avatar !== '/uploads/2.jpeg') {
-      // 檢查是否為 Cloudinary URL
-      if (user.avatar.startsWith('http')) {
-        return user.avatar;
-      }
-      return API_URL + user.avatar;
+    if (user) {
+      const avatarUrl = processAvatarUrl(user.avatar);
+      if (avatarUrl) return avatarUrl;
     }
   }
 
-  // 返回預設頭像
-  return 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+  // 3. 返回預設頭像
+  return defaultAvatar;
 }
 
 // 新增：渲染頭像組件
@@ -223,6 +223,16 @@ const globalBtnStyle = {
     opacity: 0;
   }
 }
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
 `}</style>
 
 function App() {
@@ -257,6 +267,7 @@ function App() {
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || '');
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [groupInfo, setGroupInfo] = useState(null);
+  const [isLoadingGroupInfo, setIsLoadingGroupInfo] = useState(false);
   const [mediaPreview, setMediaPreview] = useState(null); // {type, url}
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadKey, setUploadKey] = useState(0); // 用於觸發媒體牆/檔案櫃 reload
@@ -340,6 +351,8 @@ function App() {
   // 群組通話狀態
   const [groupCallState, setGroupCallState] = useState({ type: '', members: [], streams: {}, visible: false, isCaller: false });
   const [speakingUsers, setSpeakingUsers] = useState(new Set());
+  const [ongoingGroupCalls, setOngoingGroupCalls] = useState(new Map()); // 記錄正在進行的群組通話
+  const [callNotification, setCallNotification] = useState(null); // 通話通知 { groupId, type, from, fromUsername }
 
   // WebRTC 配置
   const rtcConfig = {
@@ -495,11 +508,28 @@ function App() {
       alert('通話已結束');
       console.log('通話結束', { from, to, groupId, reason });
     });
+
+    // 群組邀請事件
+    socket.on('group:invited', ({ group }) => {
+      console.log('收到群組邀請:', group);
+      // 自動添加到群組列表
+      setGroups(prev => {
+        const exists = prev.find(g => g._id === group._id);
+        if (!exists) {
+          return [...prev, group];
+        }
+        return prev;
+      });
+      // 顯示通知
+      alert(`您已被邀請加入群組：${group.name}`);
+    });
+
     return () => {
       socket.off('call:invite');
       socket.off('call:accept');
       socket.off('call:reject');
       socket.off('call:end');
+      socket.off('group:invited');
     };
   }, [socket]);
 
@@ -509,11 +539,15 @@ function App() {
 
     socket.on('group-call:invite', ({ groupId, type, from, fromUsername }) => {
       if (groupId === currentGroup && from !== userId) {
+        // 顯示通話通知，而不是直接打開視窗
+        setCallNotification({ groupId, type, from, fromUsername });
+        
+        // 設置通話狀態但不顯示視窗
         setGroupCallState({
           type,
           members: [{ userId: from, username: fromUsername }],
           streams: {},
-          visible: true,
+          visible: false, // 不自動打開視窗
           isCaller: false,
           groupId
         });
@@ -523,11 +557,26 @@ function App() {
 
     socket.on('group-call:member-joined', ({ groupId, userId: joinedUserId, username: joinedUsername }) => {
       if (groupId === currentGroup) {
-        setGroupCallState(prev => ({
-          ...prev,
-          members: [...prev.members, { userId: joinedUserId, username: joinedUsername }]
-        }));
-        console.log('成員加入群組通話', { groupId, joinedUserId, joinedUsername });
+        setGroupCallState(prev => {
+          console.log('收到 member-joined 事件', {
+            joinedUserId,
+            joinedUsername,
+            currentMembers: prev.members.map(m => ({ userId: m.userId, username: m.username }))
+          });
+
+          // 檢查成員是否已存在，避免重複添加
+          const isAlreadyInCall = prev.members.some(m => m.userId === joinedUserId);
+          if (isAlreadyInCall) {
+            console.log('⚠️ 成員已在通話中，跳過添加', { joinedUserId, joinedUsername });
+            return prev;
+          }
+
+          console.log('✅ 添加新成員到通話', { joinedUserId, joinedUsername });
+          return {
+            ...prev,
+            members: [...prev.members, { userId: joinedUserId, username: joinedUsername }]
+          };
+        });
       }
     });
 
@@ -560,12 +609,26 @@ function App() {
       }
     });
 
+    // 通話狀態更新
+    socket.on('group-call:status', ({ groupId, status, type, memberCount }) => {
+      setOngoingGroupCalls(prev => {
+        const newMap = new Map(prev);
+        if (status === 'active') {
+          newMap.set(groupId, { type, memberCount, startTime: Date.now() });
+        } else {
+          newMap.delete(groupId);
+        }
+        return newMap;
+      });
+    });
+
     return () => {
       socket.off('group-call:invite');
       socket.off('group-call:member-joined');
       socket.off('group-call:member-left');
       socket.off('group-call:signal');
       socket.off('group-call:ended');
+      socket.off('group-call:status');
     };
   }, [socket, currentGroup, userId, groupCallState.visible]);
 
@@ -1301,6 +1364,7 @@ function App() {
 
   // 取得群組資訊（後續可串接 API）
   const fetchGroupInfo = async (groupId) => {
+    setIsLoadingGroupInfo(true);
     try {
       const res = await fetch(`${API_URL}/api/group/info/${groupId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1312,8 +1376,11 @@ function App() {
       } else {
         alert(data.error || '取得群組資訊失敗');
       }
-    } catch {
+    } catch (error) {
+      console.error('取得群組資訊失敗:', error);
       alert('取得群組資訊失敗');
+    } finally {
+      setIsLoadingGroupInfo(false);
     }
   };
 
@@ -1914,14 +1981,18 @@ function App() {
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
 
-      setGroupCallState(prev => ({
-        ...prev,
-        members: [...prev.members, { userId, username }],
-        streams: { ...prev.streams, [userId]: stream },
-        localStream: stream
-      }));
+      setGroupCallState(prev => {
+        // 檢查用戶是否已在成員列表中
+        const isAlreadyInCall = prev.members.some(m => m.userId === userId);
+        return {
+          ...prev,
+          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username }],
+          streams: { ...prev.streams, [userId]: stream },
+          localStream: stream
+        };
+      });
 
-      socket.emit('group-call:join', { groupId: currentGroup, userId });
+      socket.emit('group-call:join', { groupId: currentGroup, userId, type: groupCallState.type });
       console.log('加入群組通話', { groupId: currentGroup, type: groupCallState.type });
     } catch (error) {
       console.error('無法獲取媒體設備:', error);
@@ -2013,16 +2084,7 @@ function App() {
     }
   };
 
-  // 處理收到群組通話邀請
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('group-call:invite', ({ groupId, type }) => {
-      if (groupId === currentGroup) {
-        setGroupCallState({ type, members: [], streams: {}, visible: true, isCaller: false });
-      }
-    });
-    return () => socket.off('group-call:invite');
-  }, [socket, currentGroup]);
+  // 已移除重複的 group-call:invite 監聽器（已在上方統一處理）
 
   // 錄音支援性偵測
   function isRecordingSupported() {
@@ -2094,10 +2156,35 @@ function App() {
           {(Array.isArray(groups) ? groups : []).map((g, idx) => (
             <li key={g._id || idx} style={{ marginBottom: 4 }}>
               <button
-                style={{ width: '100%', background: currentGroup === g._id ? '#e0e0e0' : '#fff' }}
+                style={{
+                  width: '100%',
+                  background: currentGroup === g._id ? themeStyles.groupItemActive : themeStyles.groupItemBg,
+                  color: themeStyles.color,
+                  border: `1px solid ${themeStyles.border}`,
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer'
+                }}
                 onClick={() => setCurrentGroup(g._id)}
               >
-                {g.name}
+                <span>{g.name}</span>
+                {ongoingGroupCalls.has(g._id) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: '#4caf50',
+                      animation: 'pulse 2s infinite'
+                    }} />
+                    <span style={{ fontSize: 11, color: '#4caf50', fontWeight: 600 }}>
+                      {ongoingGroupCalls.get(g._id)?.type === 'video' ? '視訊中' : '語音中'}
+                    </span>
+                  </div>
+                )}
               </button>
             </li>
           ))}
@@ -2246,14 +2333,42 @@ function App() {
                 )}
                 {currentGroup && hasGroupMembers && groupMembers.length > 1 && (
                   <>
-                    <button style={{ background: themeStyles.buttonInfo, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path></svg>
-                      群組語音
-                    </button>
-                    <button style={{ background: themeStyles.buttonSuccess, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect><polygon points="23 7 16 12 23 17 23 7"></polygon></svg>
-                      群組視訊
-                    </button>
+                    {/* 如果有進行中的通話，顯示加入按鈕 */}
+                    {ongoingGroupCalls.has(currentGroup) && !groupCallState.visible ? (
+                      <button 
+                        style={{ 
+                          background: '#4caf50', 
+                          color: '#fff', 
+                          border: 'none', 
+                          borderRadius: 6, 
+                          padding: '8px 16px', 
+                          cursor: 'pointer', 
+                          fontSize: 14, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 6,
+                          fontWeight: 600,
+                          animation: 'pulse 2s infinite'
+                        }} 
+                        onClick={handleJoinGroupCall}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                        加入進行中的{ongoingGroupCalls.get(currentGroup)?.type === 'video' ? '視訊' : '語音'}通話
+                      </button>
+                    ) : (
+                      <>
+                        <button style={{ background: themeStyles.buttonInfo, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path></svg>
+                          群組語音
+                        </button>
+                        <button style={{ background: themeStyles.buttonSuccess, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect><polygon points="23 7 16 12 23 17 23 7"></polygon></svg>
+                          群組視訊
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -2294,17 +2409,17 @@ function App() {
                 </div>
               </div>
             )}
-            <div ref={messagesBoxRef} onScroll={handleScroll} style={{ 
-              border: `1px solid ${themeStyles.border}`, 
-              minHeight: 200, 
-              padding: '16px', 
-              marginBottom: 10, 
-              height: 450, 
-              overflowY: 'auto', 
-              background: theme === 'dark' ? 'linear-gradient(to bottom, #0d1117, #161b22)' : 'linear-gradient(to bottom, #ffffff, #f6f8fa)', 
-              position: 'relative', 
-              width: '50vw', 
-              maxWidth: 700, 
+            <div ref={messagesBoxRef} onScroll={handleScroll} style={{
+              border: `1px solid ${themeStyles.border}`,
+              minHeight: 200,
+              padding: '16px',
+              marginBottom: 10,
+              height: 450,
+              overflowY: 'auto',
+              background: theme === 'dark' ? 'linear-gradient(to bottom, #0d1117, #161b22)' : 'linear-gradient(to bottom, #ffffff, #f6f8fa)',
+              position: 'relative',
+              width: '50vw',
+              maxWidth: 700,
               minWidth: 320,
               borderRadius: 8,
               boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
@@ -2344,18 +2459,18 @@ function App() {
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
                         <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 6 }}>
                           {/* 泡泡本體在這裡渲染 */}
-                          
+
                           {/* 已讀標籤（泡泡右側）- 只在最後一則訊息且是自己的訊息時顯示 */}
                           {isLastMessage && isMe && readByUsers.length > 0 && (
                             <div
                               ref={el => { if (el) readByRefs.current[msg._id] = el; }}
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: 3, 
-                                alignSelf: 'flex-end', 
-                                minWidth: 24, 
-                                cursor: 'pointer', 
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                                alignSelf: 'flex-end',
+                                minWidth: 24,
+                                cursor: 'pointer',
                                 marginBottom: 6,
                                 flexShrink: 0
                               }}
@@ -2422,8 +2537,8 @@ function App() {
                               padding: '12px 18px 26px 18px',
                               minWidth: 80,
                               position: 'relative',
-                              boxShadow: hoveredMsgId === msg._id 
-                                ? (theme === 'dark' ? '0 6px 20px rgba(31, 111, 235, 0.4)' : '0 6px 20px rgba(9, 105, 218, 0.3)') 
+                              boxShadow: hoveredMsgId === msg._id
+                                ? (theme === 'dark' ? '0 6px 20px rgba(31, 111, 235, 0.4)' : '0 6px 20px rgba(9, 105, 218, 0.3)')
                                 : (theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'),
                               marginLeft: isMe ? 0 : 8,
                               marginRight: isMe ? 8 : 0,
@@ -2897,7 +3012,7 @@ function App() {
           onMouseLeave={e => e.currentTarget.style.background = 'none'}
         >
           {renderAvatar(profile.username, groupInfo, profile, true)}
-          <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{fullUsername || `${profile.username}#${discriminator}`}</span>
+          <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{profile.username || username}</span>
         </button>
       )}
       {/* 會員中心 Modal */}
@@ -2987,6 +3102,7 @@ function App() {
                 }
               }} />
               <div style={{ marginBottom: 8 }}>帳號：{profile.username}</div>
+              <div style={{ marginBottom: 8 }}>ID：{discriminator || profile.discriminator}</div>
               <div style={{ marginBottom: 8 }}>
                 Email：
                 {editingEmail ? (
@@ -3101,6 +3217,8 @@ function App() {
                           ref={el => {
                             if (el && groupCallState.streams[member.userId]) {
                               el.srcObject = groupCallState.streams[member.userId];
+                              // 確保視訊播放
+                              el.play().catch(err => console.error('視訊播放失敗:', err));
                             }
                           }}
                           style={{
@@ -3108,7 +3226,12 @@ function App() {
                             height: 120,
                             borderRadius: 8,
                             objectFit: 'cover',
-                            background: '#000'
+                            background: '#000',
+                            transform: member.userId === userId ? 'scaleX(-1)' : 'none' // 鏡像翻轉自己的視訊
+                          }}
+                          onLoadedMetadata={(e) => {
+                            console.log('視訊元數據已加載:', member.username);
+                            e.target.play().catch(err => console.error('播放失敗:', err));
                           }}
                         />
                       ) : (
@@ -3147,8 +3270,14 @@ function App() {
                               zIndex: 1
                             }}
                             onError={(e) => {
+                              console.error('頭像加載失敗:', member.username, getUserAvatar(member.username, groupInfo, profile));
                               e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
+                              if (e.target.nextSibling) {
+                                e.target.nextSibling.style.display = 'flex';
+                              }
+                            }}
+                            onLoad={() => {
+                              console.log('頭像加載成功:', member.username);
                             }}
                           />
                           {/* 備用頭像（首字母） */}
@@ -3276,6 +3405,92 @@ function App() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 通話通知 */}
+      {callNotification && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          right: 20,
+          background: themeStyles.cardBg,
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          zIndex: 2500,
+          minWidth: 300,
+          border: `2px solid ${themeStyles.buttonInfo}`,
+          animation: 'slideInRight 0.3s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: themeStyles.buttonInfo,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12
+            }}>
+              {callNotification.type === 'video' ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                  <rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect>
+                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                  <path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 'bold', fontSize: 16, color: themeStyles.color, marginBottom: 4 }}>
+                {callNotification.type === 'video' ? '群組視訊通話' : '群組語音通話'}
+              </div>
+              <div style={{ fontSize: 14, color: themeStyles.textSecondary }}>
+                {callNotification.fromUsername} 發起了通話
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              style={{
+                flex: 1,
+                background: themeStyles.buttonSuccess,
+                color: themeStyles.buttonText,
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 16px',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600
+              }}
+              onClick={() => {
+                setCallNotification(null);
+                handleJoinGroupCall();
+              }}
+            >
+              加入
+            </button>
+            <button
+              style={{
+                flex: 1,
+                background: themeStyles.buttonSecondary,
+                color: themeStyles.color,
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 16px',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600
+              }}
+              onClick={() => setCallNotification(null)}
+            >
+              忽略
+            </button>
           </div>
         </div>
       )}

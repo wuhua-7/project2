@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  discriminator: { type: String, required: true, default: () => Math.floor(1000 + Math.random() * 9000).toString() }, // 四位數字
+  username: { type: String, required: true }, // 用戶名可重複
+  discriminator: { type: String, required: true, unique: true }, // ID必須唯一
   password: { type: String, required: true },
   email: { type: String, default: '' },
   expoPushToken: { type: String },

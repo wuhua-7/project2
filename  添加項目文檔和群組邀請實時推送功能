@@ -1,0 +1,30 @@
+warning: in the working copy of 'backend/src/routes/group.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/backend/src/routes/group.js b/backend/src/routes/group.js[m
+[1mindex 653f85b..5397d7a 100644[m
+[1m--- a/backend/src/routes/group.js[m
+[1m+++ b/backend/src/routes/group.js[m
+[36m@@ -55,6 +55,24 @@[m [mrouter.post('/invite', authMiddleware, async (req, res) => {[m
+   if (group.members.includes(realUserId)) return res.status(409).json({ error: '用戶已在群組中' });[m
+   group.members.push(realUserId);[m
+   await group.save();[m
+[32m+[m[41m  [m
+[32m+[m[32m  // 實時推送給被邀請者[m
+[32m+[m[32m  const io = req.app.get('io');[m
+[32m+[m[32m  const invitedUser = await User.findById(realUserId);[m
+[32m+[m[32m  if (io && invitedUser) {[m
+[32m+[m[32m    // 獲取完整群組信息[m
+[32m+[m[32m    const populatedGroup = await Group.findById(groupId).populate('members', 'username avatar discriminator');[m
+[32m+[m[32m    io.toUser?.(realUserId.toString())?.emit('group:invited', {[m
+[32m+[m[32m      group: {[m
+[32m+[m[32m        _id: populatedGroup._id,[m
+[32m+[m[32m        name: populatedGroup.name,[m
+[32m+[m[32m        members: populatedGroup.members,[m
+[32m+[m[32m        owner: populatedGroup.owner,[m
+[32m+[m[32m        admins: populatedGroup.admins[m
+[32m+[m[32m      }[m
+[32m+[m[32m    });[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+   res.json({ message: '邀請成功' });[m
+ });[m
+ [m

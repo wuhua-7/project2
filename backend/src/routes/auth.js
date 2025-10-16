@@ -6,17 +6,38 @@ const crypto = require('crypto'); // 新增
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secretkey';
 
+// 生成唯一的discriminator
+async function generateUniqueDiscriminator() {
+  let discriminator;
+  let exists = true;
+  while (exists) {
+    discriminator = Math.floor(1000 + Math.random() * 9000).toString();
+    exists = await User.findOne({ discriminator });
+  }
+  return discriminator;
+}
+
 // 註冊
 router.post('/register', async (req, res) => {
-  const { username, password, email } = req.body;
+  const { username, password, email, discriminator } = req.body;
   if (!username || !password || !email) return res.status(400).json({ error: '缺少帳號、密碼或Email' });
   if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
     return res.status(400).json({ error: '密碼需至少8碼且包含字母與數字' });
   }
   try {
-    const exist = await User.findOne({ username });
-    if (exist) return res.status(409).json({ error: '帳號已存在' });
-    const user = new User({ username, password, email });
+    // 檢查discriminator是否已被使用
+    let userDiscriminator = discriminator;
+    if (userDiscriminator) {
+      const existingUser = await User.findOne({ discriminator: userDiscriminator });
+      if (existingUser) {
+        return res.status(409).json({ error: 'ID已被使用，請選擇其他ID' });
+      }
+    } else {
+      // 如果沒有提供discriminator，自動生成唯一的
+      userDiscriminator = await generateUniqueDiscriminator();
+    }
+    
+    const user = new User({ username, password, email, discriminator: userDiscriminator });
     await user.save();
     // 新增：註冊後直接發 token
     const fullUsername = `${user.username}#${user.discriminator}`;
@@ -27,6 +48,7 @@ router.post('/register', async (req, res) => {
     await user.save();
     res.json({ token, refreshToken, username: user.username, fullUsername, discriminator: user.discriminator });
   } catch (err) {
+    console.error('註冊錯誤:', err);
     res.status(500).json({ error: '伺服器錯誤' });
   }
 });

@@ -305,15 +305,33 @@ io.on('connection', (socket) => {
       from: socket.user.id,
       fromUsername: socket.user.username 
     });
+    
+    // 廣播通話狀態（活躍）
+    io.emit('group-call:status', {
+      groupId,
+      status: 'active',
+      type,
+      memberCount: 1
+    });
   });
 
-  socket.on('group-call:join', ({ groupId, userId }) => {
+  socket.on('group-call:join', ({ groupId, userId, type }) => {
     console.log('group-call:join', { groupId, userId });
     // 通知群組內所有成員有新成員加入
     io.to(groupId).emit('group-call:member-joined', { 
       groupId, 
       userId,
       username: socket.user.username 
+    });
+    
+    // 更新通話狀態
+    const room = io.sockets.adapter.rooms.get(groupId);
+    const memberCount = room ? room.size : 1;
+    io.emit('group-call:status', {
+      groupId,
+      status: 'active',
+      type: type || 'audio',
+      memberCount
     });
   });
 
@@ -344,6 +362,14 @@ io.on('connection', (socket) => {
     console.log('group-call:end', { groupId, from: socket.user.username });
     // 通知群組內所有成員通話結束
     io.to(groupId).emit('group-call:ended', { groupId });
+    
+    // 廣播通話狀態（結束）
+    io.emit('group-call:status', {
+      groupId,
+      status: 'ended',
+      type: null,
+      memberCount: 0
+    });
   });
 
   socket.on('disconnect', () => {
