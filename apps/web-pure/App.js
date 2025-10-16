@@ -2238,14 +2238,18 @@ function App() {
                     群組資訊
                   </button>
                 )}
-                <button style={{ background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path></svg>
-                  群組語音
-                </button>
-                <button style={{ background: themeStyles.buttonSuccess, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect><polygon points="23 7 16 12 23 17 23 7"></polygon></svg>
-                  群組視訊
-                </button>
+                {currentGroup && hasGroupMembers && groupMembers.length > 1 && (
+                  <>
+                    <button style={{ background: themeStyles.buttonInfo, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupAudioCall}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.05.37 2.07.72 3.06a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c.99.35 2.01.59 3.06.72A2 2 0 0 1 22 16.92z"></path></svg>
+                      群組語音
+                    </button>
+                    <button style={{ background: themeStyles.buttonSuccess, color: themeStyles.buttonText, border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleGroupVideoCall}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="15" height="10" rx="2" ry="2"></rect><polygon points="23 7 16 12 23 17 23 7"></polygon></svg>
+                      群組視訊
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             {/* 語音通話彈窗 */}
@@ -2253,7 +2257,7 @@ function App() {
               <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0005', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 16px #0004', minWidth: 320, maxWidth: 400, padding: 32, position: 'relative', textAlign: 'center' }}>
                   {callState.status === 'calling' && <div>正在呼叫對方...</div>}
-                  {callState.status === 'incoming' && <div>來電：{callState.from}</div>}
+                  {callState.status === 'incoming' && <div>來電：{callState.fromUsername || callState.from}</div>}
                   {callState.status === 'accepted' && <div>通話中...</div>}
                   {/* 視訊通話顯示 video */}
                   {callState.type === 'video' && (

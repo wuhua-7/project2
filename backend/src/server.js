@@ -276,7 +276,7 @@ io.on('connection', (socket) => {
   // 一對一語音通話信令事件
   socket.on('call:invite', ({ from, to, groupId }) => {
     console.log('call:invite', { from, to, groupId });
-    io.toUser?.(to)?.emit('call:invite', { from, to, groupId });
+    io.toUser?.(to)?.emit('call:invite', { from, to, groupId, fromUsername: socket.user.username });
   });
   socket.on('call:accept', ({ from, to, groupId }) => {
     console.log('call:accept', { from, to, groupId });
