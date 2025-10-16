@@ -10,6 +10,7 @@ import { API_URL } from './config';
 import { checkServerStatus, waitForServer } from './utils/serverCheck.js';
 
 // 調試信息 - 強制清除緩存
+
 console.log('App.js 載入 (v5.0)，API_URL:', API_URL);
 
 // 強制清除任何可能的 localhost 緩存
@@ -340,6 +341,10 @@ function App() {
   const [editingEmail, setEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [emailSuccess, setEmailSuccess] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [editingDiscriminator, setEditingDiscriminator] = useState(false);
+  const [newDiscriminator, setNewDiscriminator] = useState('');
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
   const [contextMenuPos, setContextMenuPos] = useState(null);
   // 在 App 組件 state 區域加：
@@ -541,7 +546,7 @@ function App() {
       if (groupId === currentGroup && from !== userId) {
         // 顯示通話通知，而不是直接打開視窗
         setCallNotification({ groupId, type, from, fromUsername });
-        
+
         // 設置通話狀態但不顯示視窗
         setGroupCallState({
           type,
@@ -1988,7 +1993,9 @@ function App() {
           ...prev,
           members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username }],
           streams: { ...prev.streams, [userId]: stream },
-          localStream: stream
+          localStream: stream,
+          visible: true, // 顯示通話視窗
+          groupId: currentGroup
         };
       });
 
@@ -2335,21 +2342,21 @@ function App() {
                   <>
                     {/* 如果有進行中的通話，顯示加入按鈕 */}
                     {ongoingGroupCalls.has(currentGroup) && !groupCallState.visible ? (
-                      <button 
-                        style={{ 
-                          background: '#4caf50', 
-                          color: '#fff', 
-                          border: 'none', 
-                          borderRadius: 6, 
-                          padding: '8px 16px', 
-                          cursor: 'pointer', 
-                          fontSize: 14, 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <button
+                        style={{
+                          background: '#4caf50',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '8px 16px',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: 6,
                           fontWeight: 600,
                           animation: 'pulse 2s infinite'
-                        }} 
+                        }}
                         onClick={handleJoinGroupCall}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2875,8 +2882,8 @@ function App() {
           {/* 僅 owner/admin 可邀請成員 */}
           {(groupInfo.owner && groupInfo.owner.username === username) || (groupInfo.admins && groupInfo.admins.some(a => a.username === username)) ? (
             <button style={{ marginTop: 12 }} onClick={() => {
-              const uid = prompt('請輸入要邀請的用戶ID');
-              if (uid) handleInviteMember(uid);
+              const userIdentifier = prompt('請輸入要邀請的用戶（格式：name#1234）');
+              if (userIdentifier) handleInviteMember(userIdentifier);
             }}>邀請成員</button>
           ) : null}
         </div>
@@ -3101,8 +3108,93 @@ function App() {
                   e.target.value = '';
                 }
               }} />
-              <div style={{ marginBottom: 8 }}>帳號：{profile.username}</div>
-              <div style={{ marginBottom: 8 }}>ID：{discriminator || profile.discriminator}</div>
+              <div style={{ marginBottom: 8 }}>
+                帳號：
+                {editingUsername ? (
+                  <>
+                    <input
+                      value={newUsername}
+                      onChange={e => setNewUsername(e.target.value)}
+                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc', width: 150 }}
+                      placeholder="輸入新用戶名"
+                    />
+                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: 'none', background: '#2196f3', color: '#fff', cursor: 'pointer' }} onClick={async () => {
+                      if (!newUsername.trim()) {
+                        alert('用戶名不能為空');
+                        return;
+                      }
+                      try {
+                        const res = await fetch(`${API_URL}/api/user/update-profile`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ username: newUsername })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setProfile({ ...profile, username: newUsername });
+                          setUsername(newUsername);
+                          setEditingUsername(false);
+                          alert('用戶名更新成功');
+                        } else {
+                          alert(data.error || '更新失敗');
+                        }
+                      } catch (err) {
+                        alert('更新失敗');
+                      }
+                    }}>儲存</button>
+                    <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingUsername(false)}>取消</button>
+                  </>
+                ) : (
+                  <>
+                    {profile.username}
+                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => { setEditingUsername(true); setNewUsername(profile.username); }}>修改</button>
+                  </>
+                )}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                ID：
+                {editingDiscriminator ? (
+                  <>
+                    <input
+                      value={newDiscriminator}
+                      onChange={e => setNewDiscriminator(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc', width: 80 }}
+                      placeholder="4位數字"
+                      maxLength={4}
+                    />
+                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: 'none', background: '#2196f3', color: '#fff', cursor: 'pointer' }} onClick={async () => {
+                      if (newDiscriminator.length !== 4) {
+                        alert('ID必須是4位數字');
+                        return;
+                      }
+                      try {
+                        const res = await fetch(`${API_URL}/api/user/update-profile`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ discriminator: newDiscriminator })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setProfile({ ...profile, discriminator: newDiscriminator });
+                          setDiscriminator(newDiscriminator);
+                          setEditingDiscriminator(false);
+                          alert('ID更新成功');
+                        } else {
+                          alert(data.error || '更新失敗（ID可能已被使用）');
+                        }
+                      } catch (err) {
+                        alert('更新失敗');
+                      }
+                    }}>儲存</button>
+                    <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingDiscriminator(false)}>取消</button>
+                  </>
+                ) : (
+                  <>
+                    {discriminator || profile.discriminator}
+                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => { setEditingDiscriminator(true); setNewDiscriminator(discriminator || profile.discriminator); }}>修改</button>
+                  </>
+                )}
+              </div>
               <div style={{ marginBottom: 8 }}>
                 Email：
                 {editingEmail ? (

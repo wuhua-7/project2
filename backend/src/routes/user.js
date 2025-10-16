@@ -141,10 +141,51 @@ router.get('/profile', auth, async (req, res) => {
   if (!user) return res.status(404).json({ error: '用戶不存在' });
   res.json({
     username: user.username,
+    discriminator: user.discriminator,
     email: user.email || '',
     avatar: user.avatar || '',
     createdAt: user.createdAt
   });
+});
+
+// 更新個人資料（用戶名和ID）
+router.post('/update-profile', auth, async (req, res) => {
+  try {
+    const { username, discriminator } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: '用戶不存在' });
+    
+    // 更新用戶名
+    if (username !== undefined && username !== user.username) {
+      if (!username.trim()) {
+        return res.status(400).json({ error: '用戶名不能為空' });
+      }
+      user.username = username.trim();
+    }
+    
+    // 更新ID
+    if (discriminator !== undefined && discriminator !== user.discriminator) {
+      if (!/^\d{4}$/.test(discriminator)) {
+        return res.status(400).json({ error: 'ID必須是4位數字' });
+      }
+      // 檢查ID是否已被使用
+      const existingUser = await User.findOne({ discriminator });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(409).json({ error: 'ID已被使用' });
+      }
+      user.discriminator = discriminator;
+    }
+    
+    await user.save();
+    res.json({ 
+      message: '更新成功',
+      username: user.username,
+      discriminator: user.discriminator
+    });
+  } catch (error) {
+    console.error('更新個人資料失敗:', error);
+    res.status(500).json({ error: '更新失敗' });
+  }
 });
 
 // 查詢推播日誌

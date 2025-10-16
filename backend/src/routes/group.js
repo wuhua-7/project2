@@ -45,13 +45,27 @@ router.post('/invite', authMiddleware, async (req, res) => {
   const group = await Group.findById(groupId);
   if (!group) return res.status(404).json({ error: '群組不存在' });
   if (!isAdmin(group, req.user.id)) return res.status(403).json({ error: '無權限' });
+  
   let realUserId = userId;
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    // 嘗試用 username 查找
-    const user = await require('../models/User').findOne({ username: userId });
+  
+  // 檢查是否為 name#ID 格式
+  if (userId.includes('#')) {
+    const [username, discriminator] = userId.split('#');
+    const user = await User.findOne({ username, discriminator });
+    if (!user) return res.status(400).json({ error: '找不到該用戶（請確認格式：name#1234）' });
+    realUserId = user._id;
+  } else if (!mongoose.Types.ObjectId.isValid(userId)) {
+    // 嘗試用 username 或 discriminator 查找
+    const user = await User.findOne({ 
+      $or: [
+        { username: userId },
+        { discriminator: userId }
+      ]
+    });
     if (!user) return res.status(400).json({ error: '找不到該用戶' });
     realUserId = user._id;
   }
+  
   if (group.members.includes(realUserId)) return res.status(409).json({ error: '用戶已在群組中' });
   group.members.push(realUserId);
   await group.save();
