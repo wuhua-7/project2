@@ -745,13 +745,15 @@ function App() {
     if (currentGroup && token) {
       setMessages([]);
       setHasMoreMessages(true);
-      fetchMessages(currentGroup);
-      // 延遲滾動確保訊息已渲染，增加延遲時間
-      setTimeout(() => {
-        if (messagesBoxRef.current) {
-          messagesBoxRef.current.scrollTop = messagesBoxRef.current.scrollHeight;
-        }
-      }, 300);
+      fetchMessages(currentGroup).then(() => {
+        // 使用 Promise 確保訊息載入完成後再滾動
+        setTimeout(() => {
+          if (messagesBoxRef.current) {
+            messagesBoxRef.current.scrollTop = messagesBoxRef.current.scrollHeight;
+            console.log('滾動到底部:', messagesBoxRef.current.scrollHeight);
+          }
+        }, 500);
+      });
     }
   }, [currentGroup, token, search]);
 
@@ -1214,7 +1216,7 @@ function App() {
 
   // 完整的主題系統
   const themeStyles = theme === 'dark' ? {
-    // 深色模式 - 調整按鈕顏色使其更暗
+    // 深色模式 - 完全適應深色主題
     background: '#0d1117',
     color: '#e6edf3',
     bubbleMe: '#1f6feb',
@@ -1223,12 +1225,13 @@ function App() {
     border: '#30363d',
     sidebarBg: '#010409',
     sidebarHover: '#161b22',
-    buttonPrimary: '#1a7f37',
-    buttonSecondary: '#21262d',
-    buttonDanger: '#b62324',
-    buttonSuccess: '#1a7f37',
-    buttonInfo: '#0969da',
-    buttonWarning: '#9a6700',
+    buttonPrimary: '#238636',
+    buttonSecondary: '#30363d',
+    buttonDanger: '#da3633',
+    buttonSuccess: '#238636',
+    buttonInfo: '#1f6feb',
+    buttonWarning: '#bb8009',
+    buttonText: '#ffffff',
     cardBg: '#161b22',
     headerBg: '#010409',
     textSecondary: '#8b949e',
@@ -1240,7 +1243,7 @@ function App() {
     groupItemBg: '#161b22',
     groupItemHover: '#21262d',
     groupItemActive: '#1f6feb',
-    tabActive: '#1f6feb',
+    tabActive: '#388bfd',
     tabInactive: '#21262d',
   } : {
     // 淺色模式
@@ -1258,6 +1261,7 @@ function App() {
     buttonSuccess: '#1f883d',
     buttonInfo: '#0969da',
     buttonWarning: '#bf8700',
+    buttonText: '#ffffff',
     cardBg: '#ffffff',
     headerBg: '#f6f8fa',
     textSecondary: '#57606a',
@@ -1269,7 +1273,7 @@ function App() {
     groupItemBg: '#ffffff',
     groupItemHover: '#f6f8fa',
     groupItemActive: '#ddf4ff',
-    tabActive: '#ddf4ff',
+    tabActive: '#0969da',
     tabInactive: '#f6f8fa',
   };
 
@@ -1846,10 +1850,10 @@ function App() {
     if (!socket || !currentGroup) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      
+
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
-      
+
       setGroupCallState({
         type: 'audio',
         members: [{ userId, username }],
@@ -1871,10 +1875,10 @@ function App() {
     if (!socket || !currentGroup) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      
+
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
-      
+
       setGroupCallState({
         type: 'video',
         members: [{ userId, username }],
@@ -1933,7 +1937,7 @@ function App() {
       const detectSound = () => {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        
+
         if (average > 20) { // 音量閾值
           setSpeakingUsers(prev => new Set(prev).add(targetUserId));
         } else {
@@ -1943,7 +1947,7 @@ function App() {
             return newSet;
           });
         }
-        
+
         requestAnimationFrame(detectSound);
       };
 
@@ -2127,9 +2131,9 @@ function App() {
         {/* 新增 Tab 切換 */}
         {currentGroup && (
           <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>聊天</button>
-            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>媒體牆</button>
-            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color }}>檔案櫃</button>
+            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>💬 聊天</button>
+            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>🖼️ 圖片/影片</button>
+            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>📁 文件</button>
           </div>
         )}
         {/* 根據 Tab 顯示內容 */}
@@ -2280,7 +2284,21 @@ function App() {
                 </div>
               </div>
             )}
-            <div ref={messagesBoxRef} onScroll={handleScroll} style={{ border: `1px solid ${themeStyles.border}`, minHeight: 200, padding: 10, marginBottom: 10, height: 450, overflowY: 'auto', background: theme === 'dark' ? '#181818' : '#fafbfc', position: 'relative', width: '50vw', maxWidth: 700, minWidth: 320 }}>
+            <div ref={messagesBoxRef} onScroll={handleScroll} style={{ 
+              border: `1px solid ${themeStyles.border}`, 
+              minHeight: 200, 
+              padding: '16px', 
+              marginBottom: 10, 
+              height: 450, 
+              overflowY: 'auto', 
+              background: theme === 'dark' ? 'linear-gradient(to bottom, #0d1117, #161b22)' : 'linear-gradient(to bottom, #ffffff, #f6f8fa)', 
+              position: 'relative', 
+              width: '50vw', 
+              maxWidth: 700, 
+              minWidth: 320,
+              borderRadius: 8,
+              boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
               {loadingMoreMessages && (
                 <div style={{ textAlign: 'center', color: '#888', marginBottom: 8 }}>載入中...</div>
               )}
@@ -2314,12 +2332,23 @@ function App() {
                         {/* 頭像 */}
                         {renderAvatar(msg.sender, groupInfo, profile, isMe)}
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
-                        <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 4 }}>
-                          {/* 已讀標籤（泡泡外側）- 只在最後一則訊息且是自己的訊息時顯示 */}
+                        <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 6 }}>
+                          {/* 泡泡本體在這裡渲染 */}
+                          
+                          {/* 已讀標籤（泡泡右側）- 只在最後一則訊息且是自己的訊息時顯示 */}
                           {isLastMessage && isMe && readByUsers.length > 0 && (
                             <div
                               ref={el => { if (el) readByRefs.current[msg._id] = el; }}
-                              style={{ display: 'flex', alignItems: 'center', gap: 2, alignSelf: 'flex-end', minWidth: 24, cursor: 'pointer', marginBottom: 4 }}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 3, 
+                                alignSelf: 'flex-end', 
+                                minWidth: 24, 
+                                cursor: 'pointer', 
+                                marginBottom: 6,
+                                flexShrink: 0
+                              }}
                               onClick={e => {
                                 e.stopPropagation();
                                 setOpenReadByMsgId(msg._id === openReadByMsgId ? null : msg._id);
@@ -2374,21 +2403,24 @@ function App() {
                           {/* 泡泡本體 */}
                           <div
                             style={{
-                              maxWidth: 340,
+                              maxWidth: 360,
                               background: isMe
                                 ? themeStyles.bubbleMe
                                 : themeStyles.bubbleOther,
-                              color: isMe ? (theme === 'dark' ? '#fff' : '#222') : '#222',
-                              borderRadius: 16,
-                              padding: '10px 16px 24px 16px',
+                              color: isMe ? '#ffffff' : themeStyles.color,
+                              borderRadius: 18,
+                              padding: '12px 18px 26px 18px',
                               minWidth: 80,
                               position: 'relative',
-                              boxShadow: hoveredMsgId === msg._id ? '0 4px 16px #2196f355' : '0 1px 2px #0001',
+                              boxShadow: hoveredMsgId === msg._id 
+                                ? (theme === 'dark' ? '0 6px 20px rgba(31, 111, 235, 0.4)' : '0 6px 20px rgba(9, 105, 218, 0.3)') 
+                                : (theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'),
                               marginLeft: isMe ? 0 : 8,
                               marginRight: isMe ? 8 : 0,
-                              transform: hoveredMsgId === msg._id ? 'scale(1.04)' : 'scale(1)',
-                              transition: 'box-shadow 0.2s, transform 0.18s',
+                              transform: hoveredMsgId === msg._id ? 'scale(1.02)' : 'scale(1)',
+                              transition: 'all 0.2s ease',
                               cursor: 'pointer',
+                              border: isMe ? 'none' : `1px solid ${themeStyles.border}`,
                             }}
                             onContextMenu={e => {
                               e.preventDefault();
@@ -3037,7 +3069,7 @@ function App() {
                 const isMuted = member.userId === userId ? groupCallState.isMuted : member.isMuted;
                 const isVideoOff = member.userId === userId ? groupCallState.isVideoOff : member.isVideoOff;
                 const isSpeaking = speakingUsers.has(member.userId) && !isMuted;
-                
+
                 return (
                   <div key={member.userId} style={{
                     background: theme === 'dark' ? '#21262d' : '#f5f5f5',
@@ -3129,7 +3161,7 @@ function App() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* 靜音圖示 */}
                       {isMuted && (
                         <div style={{
