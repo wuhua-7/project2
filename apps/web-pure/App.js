@@ -209,6 +209,20 @@ const globalBtnStyle = {
 .avatar-success-fade.show {
   opacity: 1;
 }
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
 `}</style>
 
 function App() {
@@ -323,6 +337,7 @@ function App() {
   const [showGroupMemberList, setShowGroupMemberList] = useState(false);
   // 群組通話狀態
   const [groupCallState, setGroupCallState] = useState({ type: '', members: [], streams: {}, visible: false, isCaller: false });
+  const [speakingUsers, setSpeakingUsers] = useState(new Set());
 
   // WebRTC 配置
   const rtcConfig = {
@@ -1831,6 +1846,10 @@ function App() {
     if (!socket || !currentGroup) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      
+      // 設置音頻檢測
+      setupAudioDetection(stream, userId);
+      
       setGroupCallState({
         type: 'audio',
         members: [{ userId, username }],
@@ -1852,6 +1871,10 @@ function App() {
     if (!socket || !currentGroup) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      
+      // 設置音頻檢測
+      setupAudioDetection(stream, userId);
+      
       setGroupCallState({
         type: 'video',
         members: [{ userId, username }],
@@ -1878,6 +1901,9 @@ function App() {
         video: isVideo
       });
 
+      // 設置音頻檢測
+      setupAudioDetection(stream, userId);
+
       setGroupCallState(prev => ({
         ...prev,
         members: [...prev.members, { userId, username }],
@@ -1890,6 +1916,40 @@ function App() {
     } catch (error) {
       console.error('無法獲取媒體設備:', error);
       alert('無法訪問麥克風或攝像頭，請檢查權限設置');
+    }
+  };
+
+  // 音頻檢測函數
+  const setupAudioDetection = (stream, targetUserId) => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      microphone.connect(analyser);
+      analyser.fftSize = 256;
+
+      const detectSound = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        
+        if (average > 20) { // 音量閾值
+          setSpeakingUsers(prev => new Set(prev).add(targetUserId));
+        } else {
+          setSpeakingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetUserId);
+            return newSet;
+          });
+        }
+        
+        requestAnimationFrame(detectSound);
+      };
+
+      detectSound();
+    } catch (error) {
+      console.error('音頻檢測設置失敗:', error);
     }
   };
 
@@ -2973,87 +3033,154 @@ function App() {
                 </div>
               )}
 
-              {groupCallState.members.map(member => (
-                <div key={member.userId} style={{
-                  background: theme === 'dark' ? '#21262d' : '#f5f5f5',
-                  borderRadius: 12,
-                  padding: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  border: member.userId === userId ? `2px solid ${themeStyles.buttonInfo}` : '2px solid transparent'
-                }}>
-                  {groupCallState.type === 'video' && groupCallState.streams[member.userId] ? (
-                    <video
-                      autoPlay
-                      playsInline
-                      muted={member.userId === userId}
-                      ref={el => {
-                        if (el && groupCallState.streams[member.userId]) {
-                          el.srcObject = groupCallState.streams[member.userId];
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        borderRadius: 8,
-                        objectFit: 'cover',
-                        background: '#000',
-                        marginBottom: 8
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%',
-                      height: 120,
-                      borderRadius: 8,
-                      background: themeStyles.buttonInfo,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 8
-                    }}>
-                      <div style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: '50%',
-                        background: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 24,
-                        fontWeight: 'bold',
-                        color: themeStyles.buttonInfo
-                      }}>
-                        {member.username ? member.username[0].toUpperCase() : '?'}
-                      </div>
+              {groupCallState.members.map(member => {
+                const isMuted = member.userId === userId ? groupCallState.isMuted : member.isMuted;
+                const isVideoOff = member.userId === userId ? groupCallState.isVideoOff : member.isVideoOff;
+                const isSpeaking = speakingUsers.has(member.userId) && !isMuted;
+                
+                return (
+                  <div key={member.userId} style={{
+                    background: theme === 'dark' ? '#21262d' : '#f5f5f5',
+                    borderRadius: 12,
+                    padding: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    border: member.userId === userId ? `2px solid ${themeStyles.buttonInfo}` : '2px solid transparent',
+                    position: 'relative'
+                  }}>
+                    {/* 視訊或頭像顯示 */}
+                    <div style={{ position: 'relative', width: '100%', marginBottom: 8 }}>
+                      {groupCallState.type === 'video' && groupCallState.streams[member.userId] && !isVideoOff ? (
+                        <video
+                          autoPlay
+                          playsInline
+                          muted={member.userId === userId}
+                          ref={el => {
+                            if (el && groupCallState.streams[member.userId]) {
+                              el.srcObject = groupCallState.streams[member.userId];
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            height: 120,
+                            borderRadius: 8,
+                            objectFit: 'cover',
+                            background: '#000'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: 120,
+                          borderRadius: 8,
+                          background: themeStyles.buttonInfo,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}>
+                          {/* 音波動畫 */}
+                          {isSpeaking && (
+                            <div style={{
+                              position: 'absolute',
+                              width: 80,
+                              height: 80,
+                              borderRadius: '50%',
+                              border: '3px solid rgba(255,255,255,0.6)',
+                              animation: 'pulse 1.5s ease-out infinite'
+                            }} />
+                          )}
+                          {/* 頭像 */}
+                          <img
+                            src={getUserAvatar(member.username, groupInfo, profile)}
+                            alt={member.username}
+                            style={{
+                              width: 60,
+                              height: 60,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '3px solid #fff',
+                              position: 'relative',
+                              zIndex: 1
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          {/* 備用頭像（首字母） */}
+                          <div style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: '50%',
+                            background: '#fff',
+                            display: 'none',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 24,
+                            fontWeight: 'bold',
+                            color: themeStyles.buttonInfo,
+                            border: '3px solid #fff',
+                            position: 'absolute',
+                            zIndex: 1
+                          }}>
+                            {member.username ? member.username[0].toUpperCase() : '?'}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 靜音圖示 */}
+                      {isMuted && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          background: 'rgba(229, 57, 53, 0.9)',
+                          borderRadius: '50%',
+                          width: 28,
+                          height: 28,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 2
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                          </svg>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  <div style={{ fontSize: 14, fontWeight: 600, color: themeStyles.color, textAlign: 'center' }}>
-                    {member.username}
-                    {member.userId === userId && ' (你)'}
+                    <div style={{ fontSize: 14, fontWeight: 600, color: themeStyles.color, textAlign: 'center' }}>
+                      {member.username}
+                      {member.userId === userId && ' (你)'}
+                    </div>
+
+                    {groupCallState.streams[member.userId] && (
+                      <audio
+                        autoPlay
+                        ref={el => {
+                          if (el && groupCallState.streams[member.userId] && member.userId !== userId) {
+                            el.srcObject = groupCallState.streams[member.userId];
+                          }
+                        }}
+                      />
+                    )}
                   </div>
-
-                  {groupCallState.streams[member.userId] && (
-                    <audio
-                      autoPlay
-                      ref={el => {
-                        if (el && groupCallState.streams[member.userId] && member.userId !== userId) {
-                          el.srcObject = groupCallState.streams[member.userId];
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 控制按鈕 */}
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {!groupCallState.isCaller && groupCallState.members.length > 0 && !groupCallState.members.some(m => m.userId === userId) && (
                 <button
-                  style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
+                  style={{ background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
                   onClick={handleJoinGroupCall}
                 >
                   加入通話
@@ -3064,7 +3191,7 @@ function App() {
                 <>
                   <button
                     style={{
-                      background: groupCallState.isMuted ? '#e53935' : '#43a047',
+                      background: groupCallState.isMuted ? themeStyles.buttonDanger : themeStyles.buttonSuccess,
                       color: '#fff',
                       border: 'none',
                       borderRadius: 8,
@@ -3081,7 +3208,7 @@ function App() {
                   {groupCallState.type === 'video' && (
                     <button
                       style={{
-                        background: groupCallState.isVideoOff ? '#e53935' : '#43a047',
+                        background: groupCallState.isVideoOff ? themeStyles.buttonDanger : themeStyles.buttonSuccess,
                         color: '#fff',
                         border: 'none',
                         borderRadius: 8,
@@ -3098,18 +3225,9 @@ function App() {
                 </>
               )}
 
-              {groupCallState.isCaller && (
+              {groupCallState.members.some(m => m.userId === userId) && (
                 <button
-                  style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
-                  onClick={handleEndGroupCall}
-                >
-                  結束通話
-                </button>
-              )}
-
-              {!groupCallState.isCaller && groupCallState.members.some(m => m.userId === userId) && (
-                <button
-                  style={{ background: '#ff9800', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
+                  style={{ background: themeStyles.buttonDanger, color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
                   onClick={handleLeaveGroupCall}
                 >
                   離開通話
