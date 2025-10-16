@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
+  discriminator: { type: String, required: true, default: () => Math.floor(1000 + Math.random() * 9000).toString() }, // 四位數字
   password: { type: String, required: true },
   email: { type: String, default: '' },
   expoPushToken: { type: String },
@@ -14,6 +15,11 @@ const userSchema = new mongoose.Schema({
   }, // 新增，推播偏好
   isAdmin: { type: Boolean, default: false }, // 新增，管理員權限
   avatar: { type: String, default: "" }, // 新增，頭像網址
+});
+
+// 添加虛擬屬性返回完整用戶標識
+userSchema.virtual('fullUsername').get(function() {
+  return `${this.username}#${this.discriminator}`;
 });
 
 userSchema.pre('save', async function(next) {

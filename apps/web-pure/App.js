@@ -228,6 +228,8 @@ const globalBtnStyle = {
 function App() {
   const [page, setPage] = useState('login'); // login | register | chat
   const [username, setUsername] = useState('');
+  const [discriminator, setDiscriminator] = useState('');
+  const [fullUsername, setFullUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -932,10 +934,14 @@ function App() {
         setToken(data.token);
         setRefreshToken(data.refreshToken);
         setUsername(data.username);
+        setDiscriminator(data.discriminator || '0000');
+        setFullUsername(data.fullUsername || `${data.username}#0000`);
         if (rememberMe) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('refreshToken', data.refreshToken);
           localStorage.setItem('username', data.username);
+          localStorage.setItem('discriminator', data.discriminator || '0000');
+          localStorage.setItem('fullUsername', data.fullUsername || `${data.username}#0000`);
         } else {
           sessionStorage.setItem('token', data.token);
           sessionStorage.setItem('refreshToken', data.refreshToken);
@@ -2891,7 +2897,7 @@ function App() {
           onMouseLeave={e => e.currentTarget.style.background = 'none'}
         >
           {renderAvatar(profile.username, groupInfo, profile, true)}
-          <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{profile.username}</span>
+          <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{fullUsername || `${profile.username}#${discriminator}`}</span>
         </button>
       )}
       {/* 會員中心 Modal */}

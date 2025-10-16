@@ -19,12 +19,13 @@ router.post('/register', async (req, res) => {
     const user = new User({ username, password, email });
     await user.save();
     // 新增：註冊後直接發 token
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+    const fullUsername = `${user.username}#${user.discriminator}`;
+    const token = jwt.sign({ id: user._id, username: user.username, discriminator: user.discriminator }, JWT_SECRET, { expiresIn: '1h' });
     const refreshToken = crypto.randomBytes(40).toString('hex');
     user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
-    res.json({ token, refreshToken, username: user.username });
+    res.json({ token, refreshToken, username: user.username, fullUsername, discriminator: user.discriminator });
   } catch (err) {
     res.status(500).json({ error: '伺服器錯誤' });
   }
@@ -39,14 +40,15 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: '帳號或密碼錯誤' });
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ error: '帳號或密碼錯誤' });
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+    const fullUsername = `${user.username}#${user.discriminator}`;
+    const token = jwt.sign({ id: user._id, username: user.username, discriminator: user.discriminator }, JWT_SECRET, { expiresIn: '1h' });
     // 產生 refresh token
     const refreshToken = crypto.randomBytes(40).toString('hex');
     // 儲存 refresh token
     user.refreshTokens = user.refreshTokens || [];
     user.refreshTokens.push(refreshToken);
     await user.save();
-    res.json({ token, refreshToken, username: user.username });
+    res.json({ token, refreshToken, username: user.username, fullUsername, discriminator: user.discriminator });
   } catch (err) {
     res.status(500).json({ error: '伺服器錯誤' });
   }
