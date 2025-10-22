@@ -88,7 +88,7 @@ function renderContentWithMention(content, username, group) {
 }
 
 // 新增：取得用戶頭像（優化版）
-function getUserAvatar(username, groupInfo, profile) {
+function getUserAvatar(username, groupInfo, profile, senderInfo = null) {
   const defaultAvatar = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
 
   // 輔助函數：處理頭像URL
@@ -98,13 +98,22 @@ function getUserAvatar(username, groupInfo, profile) {
     return API_URL + avatar;
   };
 
-  // 1. 優先使用 profile 中的頭像（當前用戶）
+  // 1. 優先使用 senderInfo（訊息發送者信息）
+  if (senderInfo && senderInfo.username === username && senderInfo.avatar) {
+    const avatarUrl = processAvatarUrl(senderInfo.avatar);
+    if (avatarUrl) {
+      console.log('使用 senderInfo 頭像:', username, avatarUrl);
+      return avatarUrl;
+    }
+  }
+
+  // 2. 使用 profile 中的頭像（當前用戶）
   if (profile && username === profile.username) {
     const avatarUrl = processAvatarUrl(profile.avatar);
     if (avatarUrl) return avatarUrl;
   }
 
-  // 2. 從群組信息中查找用戶頭像
+  // 3. 從群組信息中查找用戶頭像
   if (groupInfo && Array.isArray(groupInfo.members)) {
     const user = groupInfo.members.find(u => u && u.username === username);
     if (user) {
@@ -113,13 +122,14 @@ function getUserAvatar(username, groupInfo, profile) {
     }
   }
 
-  // 3. 返回預設頭像
+  // 4. 返回預設頭像
+  console.log('使用默認頭像:', username);
   return defaultAvatar;
 }
 
 // 新增：渲染頭像組件
-function renderAvatar(username, groupInfo, profile, isMe = false) {
-  const avatarUrl = getUserAvatar(username, groupInfo, profile);
+function renderAvatar(username, groupInfo, profile, isMe = false, senderInfo = null) {
+  const avatarUrl = getUserAvatar(username, groupInfo, profile, senderInfo);
   const avatarStyle = {
     width: 36,
     height: 36,
@@ -2635,8 +2645,8 @@ function App() {
                       nodeRef={messageRefs.current[msg._id]}
                     >
                       <div ref={messageRefs.current[msg._id]} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', marginBottom: 10 }}>
-                        {/* 頭像 */}
-                        {renderAvatar(msg.sender, groupInfo, profile, isMe)}
+                        {/* 頭像 - 傳遞 senderInfo */}
+                        {renderAvatar(msg.sender, groupInfo, profile, isMe, msg.senderInfo)}
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
                         <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 6 }}>
                           {/* 泡泡本體在這裡渲染 */}
@@ -2664,18 +2674,24 @@ function App() {
                                 }
                               }}
                             >
-                              {readByUsers.slice(0, 3).map(user => (
-                                <img
-                                  key={user._id}
-                                  src={getUserAvatar(user.username, groupInfo, profile)}
-                                  alt={user.username}
-                                  title={user.username}
-                                  style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #fff', boxShadow: '0 1px 3px #0002' }}
-                                  onError={(e) => {
-                                    e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
-                                  }}
-                                />
-                              ))}
+                              {readByUsers.slice(0, 3).map(user => {
+                                // 使用 readBy 用戶的頭像信息
+                                const readByUserInfo = { username: user.username, avatar: user.avatar, discriminator: user.discriminator };
+                                const avatarUrl = getUserAvatar(user.username, groupInfo, profile, readByUserInfo);
+                                return (
+                                  <img
+                                    key={user._id}
+                                    src={avatarUrl}
+                                    alt={user.username}
+                                    title={user.username}
+                                    style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #fff', boxShadow: '0 1px 3px #0002' }}
+                                    onError={(e) => {
+                                      console.error('已讀頭像加載失敗:', user.username, avatarUrl);
+                                      e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
+                                    }}
+                                  />
+                                );
+                              })}
                               {readByUsers.length > 3 && (
                                 <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#e0e3eb', color: '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, border: '1.5px solid #fff', boxShadow: '0 1px 3px #0002' }}>+{readByUsers.length - 3}</div>
                               )}

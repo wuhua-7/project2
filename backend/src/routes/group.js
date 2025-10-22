@@ -216,8 +216,8 @@ router.get('/:groupId/messages', authMiddleware, async (req, res) => {
   const msgs = await Message.find(query)
     .sort({ createdAt: -1 })
     .limit(Math.max(1, Math.min(Number(limit), 100)))
-    .populate('sender', 'username')
-    .populate('readBy', 'username avatar');
+    .populate('sender', 'username avatar discriminator')
+    .populate('readBy', 'username avatar discriminator');
   let hasMore = false;
   if (msgs.length > 0) {
     const oldest = msgs[msgs.length - 1].createdAt;
@@ -227,6 +227,11 @@ router.get('/:groupId/messages', authMiddleware, async (req, res) => {
     messages: msgs.reverse().map(m => ({
       _id: m._id,
       sender: m.sender.username,
+      senderInfo: {
+        username: m.sender.username,
+        avatar: m.sender.avatar,
+        discriminator: m.sender.discriminator
+      },
       content: m.content,
       createdAt: m.createdAt,
       type: m.type,
@@ -234,7 +239,7 @@ router.get('/:groupId/messages', authMiddleware, async (req, res) => {
       filename: m.filename,
       size: m.size,
       mimetype: m.mimetype,
-      readBy: m.readBy, // 這裡現在是 user 物件陣列
+      readBy: m.readBy, // 這裡現在是 user 物件陣列，包含 avatar
       isRevoked: m.isRevoked,
       editedAt: m.editedAt,
       tags: m.tags,
