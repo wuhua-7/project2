@@ -358,6 +358,7 @@ function App() {
   const [speakingUsers, setSpeakingUsers] = useState(new Set());
   const [ongoingGroupCalls, setOngoingGroupCalls] = useState(new Map()); // 記錄正在進行的群組通話
   const [callNotification, setCallNotification] = useState(null); // 通話通知 { groupId, type, from, fromUsername }
+  const [peerConnections, setPeerConnections] = useState(new Map()); // WebRTC peer 連接管理 Map<userId, RTCPeerConnection>
 
   // WebRTC 配置
   const rtcConfig = {
@@ -577,6 +578,10 @@ function App() {
           }
 
           console.log('✅ 添加新成員到通話', { joinedUserId, joinedUsername });
+
+          // 不為新成員創建連接（他們會作為發起者創建連接）
+          // 我們只需等待他們的 offer
+
           return {
             ...prev,
             members: [...prev.members, { userId: joinedUserId, username: joinedUsername }]
@@ -599,13 +604,23 @@ function App() {
     });
 
     // 接收現有成員列表（當加入通話時）
-    socket.on('group-call:existing-members', ({ groupId, members }) => {
+    socket.on('group-call:existing-members', async ({ groupId, members }) => {
       if (groupId === currentGroup) {
         console.log('收到現有成員列表:', members);
         setGroupCallState(prev => {
           // 合併現有成員，避免重複
           const existingIds = new Set(prev.members.map(m => m.userId));
           const newMembers = members.filter(m => !existingIds.has(m.userId));
+
+          // 為每個現有成員創建 WebRTC 連接（作為發起者）
+          if (prev.localStream) {
+            members.forEach(member => {
+              if (member.userId !== userId) {
+                createPeerConnection(member.userId, true, prev.localStream);
+              }
+            });
+          }
+
           return {
             ...prev,
             members: [...prev.members, ...newMembers]
@@ -617,8 +632,7 @@ function App() {
     socket.on('group-call:signal', async ({ groupId, fromUserId, fromUsername, signal }) => {
       if (groupId === currentGroup && groupCallState.visible) {
         console.log('收到群組通話信令', { groupId, fromUserId, signal });
-        // 處理 WebRTC 信令（簡化版，實際需要更複雜的 peer 管理）
-        // 這裡需要為每個成員建立獨立的 RTCPeerConnection
+        await handleWebRTCSignal(fromUserId, signal);
       }
     });
 
@@ -2024,6 +2038,131 @@ function App() {
     }
   };
 
+  // WebRTC: 創建與特定用戶的 peer 連接
+  const createPeerConnection = async (remoteUserId, isInitiator, localStream) => {
+    console.log(`創建 WebRTC 連接: ${remoteUserId}, isInitiator: ${isInitiator}`);
+
+    const pc = new RTCPeerConnection(rtcConfig);
+
+    // 添加本地流到連接
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+        console.log(`添加本地軌道: ${track.kind}`);
+      });
+    }
+
+    // 監聽遠程流
+    pc.ontrack = (event) => {
+      console.log(`收到遠程流: ${remoteUserId}`, event.streams[0]);
+      setGroupCallState(prev => ({
+        ...prev,
+        streams: {
+          ...prev.streams,
+          [remoteUserId]: event.streams[0]
+        }
+      }));
+    };
+
+    // 監聽 ICE candidate
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log(`發送 ICE candidate 給: ${remoteUserId}`);
+        socket.emit('group-call:signal', {
+          groupId: currentGroup,
+          targetUserId: remoteUserId,
+          signal: {
+            type: 'ice-candidate',
+            candidate: event.candidate
+          }
+        });
+      }
+    };
+
+    // 監聽連接狀態
+    pc.onconnectionstatechange = () => {
+      console.log(`連接狀態 ${remoteUserId}:`, pc.connectionState);
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.log(`連接失敗，嘗試重新連接: ${remoteUserId}`);
+      }
+    };
+
+    // 保存連接
+    setPeerConnections(prev => {
+      const newMap = new Map(prev);
+      newMap.set(remoteUserId, pc);
+      return newMap;
+    });
+
+    // 如果是發起者，創建 offer
+    if (isInitiator) {
+      try {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: groupCallState.type === 'video'
+        });
+        await pc.setLocalDescription(offer);
+
+        console.log(`發送 offer 給: ${remoteUserId}`);
+        socket.emit('group-call:signal', {
+          groupId: currentGroup,
+          targetUserId: remoteUserId,
+          signal: {
+            type: 'offer',
+            sdp: offer
+          }
+        });
+      } catch (error) {
+        console.error(`創建 offer 失敗: ${remoteUserId}`, error);
+      }
+    }
+
+    return pc;
+  };
+
+  // WebRTC: 處理收到的信令
+  const handleWebRTCSignal = async (fromUserId, signal) => {
+    console.log(`收到信令從 ${fromUserId}:`, signal.type);
+
+    let pc = peerConnections.get(fromUserId);
+
+    // 如果還沒有連接，創建一個
+    if (!pc && signal.type === 'offer') {
+      pc = await createPeerConnection(fromUserId, false, groupCallState.localStream);
+    }
+
+    if (!pc) {
+      console.error(`找不到 peer 連接: ${fromUserId}`);
+      return;
+    }
+
+    try {
+      if (signal.type === 'offer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        console.log(`發送 answer 給: ${fromUserId}`);
+        socket.emit('group-call:signal', {
+          groupId: currentGroup,
+          targetUserId: fromUserId,
+          signal: {
+            type: 'answer',
+            sdp: answer
+          }
+        });
+      } else if (signal.type === 'answer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        console.log(`設置遠程描述成功: ${fromUserId}`);
+      } else if (signal.type === 'ice-candidate') {
+        await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        console.log(`添加 ICE candidate 成功: ${fromUserId}`);
+      }
+    } catch (error) {
+      console.error(`處理信令失敗 ${fromUserId}:`, error);
+    }
+  };
+
   // 音頻檢測函數
   const setupAudioDetection = (stream, targetUserId) => {
     try {
@@ -2061,15 +2200,24 @@ function App() {
   const handleLeaveGroupCall = () => {
     if (!socket || !currentGroup) return;
 
+    // 停止本地流
     if (groupCallState.localStream) {
       groupCallState.localStream.getTracks().forEach(track => track.stop());
     }
 
+    // 停止所有遠程流
     Object.values(groupCallState.streams).forEach(stream => {
       if (stream && stream.getTracks) {
         stream.getTracks().forEach(track => track.stop());
       }
     });
+
+    // 關閉所有 WebRTC 連接
+    peerConnections.forEach((pc, peerId) => {
+      console.log(`關閉 WebRTC 連接: ${peerId}`);
+      pc.close();
+    });
+    setPeerConnections(new Map());
 
     // 檢查是否是最後一人，如果是則結束通話
     const isLastPerson = groupCallState.members.length <= 1;
