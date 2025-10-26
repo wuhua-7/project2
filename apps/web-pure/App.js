@@ -540,12 +540,34 @@ function App() {
       alert(`您已被邀請加入群組：${group.name}`);
     });
 
+    // 訊息已讀事件
+    socket.on('message read', ({ messageIds, userId, user }) => {
+      console.log('收到訊息已讀通知:', { messageIds, userId, user });
+      // 更新訊息的 readBy 狀態
+      setMessages(prev => prev.map(msg => {
+        if (messageIds.includes(msg._id)) {
+          // 檢查是否已經在 readBy 中
+          const alreadyRead = msg.readBy?.some(u => 
+            (typeof u === 'object' ? u._id : u) === userId
+          );
+          if (!alreadyRead) {
+            return {
+              ...msg,
+              readBy: [...(msg.readBy || []), user]
+            };
+          }
+        }
+        return msg;
+      }));
+    });
+
     return () => {
       socket.off('call:invite');
       socket.off('call:accept');
       socket.off('call:reject');
       socket.off('call:end');
       socket.off('group:invited');
+      socket.off('message read');
     };
   }, [socket]);
 
@@ -2628,15 +2650,26 @@ function App() {
                     // console.log('渲染語音訊息', msg._id, 'playingVoiceId:', playingVoiceId); // 調試用，已註釋
                   }
                   // 在渲染已讀頭像前檢查 readBy 數據
-                  // console.log('自己 username:', username, 'msg.readBy:', msg.readBy); // 調試用，已註釋
-                  // 統一處理 readBy，只顯示有 username 且不是自己的 user
                   const readByUsers = (msg.readBy || []).filter(user => typeof user === 'object' && user.username && user.username !== username);
                   // 只有最後一則訊息顯示已讀狀態
                   const isLastMessage = idx === filteredMessages.length - 1;
+                  
+                  // 調試：檢查已讀狀態
+                  const isMe = msg.sender === username;
+                  if (isLastMessage && isMe) {
+                    console.log('最後一則訊息已讀狀態:', {
+                      msgId: msg._id,
+                      sender: msg.sender,
+                      isMe,
+                      readBy: msg.readBy,
+                      readByUsers: readByUsers.length,
+                      readByData: readByUsers
+                    });
+                  }
                   if (!messageRefs.current[msg._id]) {
                     messageRefs.current[msg._id] = React.createRef();
                   }
-                  const isMe = msg.sender === username;
+                  
                   return (
                     <CSSTransition
                       key={msg._id}
