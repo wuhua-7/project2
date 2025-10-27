@@ -903,8 +903,17 @@ function App() {
   useEffect(() => {
     // 切換群組時自動回報已讀
     if (socket && currentGroup && messages.length > 0) {
-      const unreadIds = messages.filter(m => !(m.readBy || []).includes(userId)).map(m => m._id);
+      const unreadIds = messages.filter(m => {
+        const readBy = m.readBy || [];
+        // 檢查 readBy 是否包含當前用戶（支持對象和ID兩種格式）
+        const isRead = readBy.some(u => 
+          (typeof u === 'object' ? u._id : u) === userId
+        );
+        return !isRead;
+      }).map(m => m._id);
+      
       if (unreadIds.length > 0) {
+        console.log('發送已讀通知:', { groupId: currentGroup, messageIds: unreadIds });
         socket.emit('message read', { groupId: currentGroup, messageIds: unreadIds });
       }
     }
