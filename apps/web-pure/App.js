@@ -1899,51 +1899,71 @@ function App() {
 
   // 在App組件內部 useEffect 加全域樣式覆蓋
   React.useEffect(() => {
+    // 設置 body 背景色
+    document.body.style.background = themeStyles.background;
+    document.body.style.color = themeStyles.color;
+    document.body.style.minHeight = '100vh';
+    
     const style = document.createElement('style');
     style.innerHTML = `
+      html, body {
+        background: ${themeStyles.background} !important;
+        color: ${themeStyles.color} !important;
+        margin: 0;
+        padding: 0;
+      }
       button, .global-btn {
         padding: 8px 20px !important;
         border-radius: 32px !important;
         border: none !important;
-        background: #f5f5f5 !important;
-        color: #222 !important;
+        background: ${themeStyles.buttonSecondary} !important;
+        color: ${themeStyles.color} !important;
         cursor: pointer !important;
         font-size: 16px !important;
         font-weight: 500 !important;
         transition: background 0.25s, color 0.2s !important;
-        box-shadow: 0 2px 8px #0001 !important;
+        box-shadow: ${isDarkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'} !important;
       }
       button:hover, .global-btn:hover {
-        background: #e0e0e0 !important;
+        background: ${isDarkMode ? '#616161' : '#e0e0e0'} !important;
       }
       button:active, .global-btn:active {
         opacity: 0.8;
       }
       .button-primary {
-        background: ${isDarkMode ? '#1976d2' : '#2196f3'};
-        color: #fff;
+        background: ${themeStyles.buttonPrimary} !important;
+        color: #fff !important;
       }
       .button-primary:hover {
-        background: ${isDarkMode ? '#1565c0' : '#1976d2'};
+        background: ${isDarkMode ? '#1a6e29' : '#1a7f37'} !important;
       }
       .button-secondary {
-        background: ${isDarkMode ? '#424242' : '#f5f5f5'};
-        color: ${isDarkMode ? '#fff' : '#222'};
+        background: ${themeStyles.buttonSecondary} !important;
+        color: ${themeStyles.color} !important;
       }
       .button-secondary:hover {
-        background: ${isDarkMode ? '#616161' : '#e0e0e0'};
+        background: ${isDarkMode ? '#616161' : '#e0e0e0'} !important;
       }
       .button-danger {
-        background: ${isDarkMode ? '#c62828' : '#e53935'};
-        color: #fff;
+        background: ${themeStyles.buttonDanger} !important;
+        color: #fff !important;
       }
       .button-danger:hover {
-        background: ${isDarkMode ? '#b71c1c' : '#c62828'};
+        background: ${isDarkMode ? '#b71c1c' : '#c62828'} !important;
+      }
+      input, textarea, select {
+        background: ${themeStyles.input} !important;
+        color: ${themeStyles.color} !important;
+        border: 1px solid ${themeStyles.border} !important;
       }
     `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
-  }, []);
+    return () => { 
+      document.head.removeChild(style);
+      document.body.style.background = '';
+      document.body.style.color = '';
+    };
+  }, [theme, themeStyles, isDarkMode]);
 
   // 點擊其他地方時自動關閉選單
   useEffect(() => {
@@ -2399,7 +2419,7 @@ function App() {
 
   // 聊天室頁面
   return (
-    <div style={{ maxWidth: 900, margin: '40px auto', fontFamily: 'sans-serif', display: 'flex', background: themeStyles.background, color: themeStyles.color }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
       {/* 左側群組清單 */}
       <div style={{ width: 180, marginRight: 16 }}>
         <h3>我的群組</h3>
@@ -2445,7 +2465,7 @@ function App() {
             value={groupName}
             onChange={e => setGroupName(e.target.value)}
             placeholder="新群組名稱"
-            style={{ width: '100%', marginBottom: 4, padding: 4 }}
+            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}
           />
           <button onClick={createGroup} className="button-primary" style={{ width: '100%' }}>建立群組</button>
         </div>
@@ -2454,7 +2474,7 @@ function App() {
             value={joinGroupId}
             onChange={e => setJoinGroupId(e.target.value)}
             placeholder="加入群組ID"
-            style={{ width: '100%', marginBottom: 4, padding: 4 }}
+            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}
           />
           <button onClick={joinGroup} className="button-primary" style={{ width: '100%' }}>加入群組</button>
         </div>
