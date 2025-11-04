@@ -269,7 +269,7 @@ function App() {
   const [userId, setUserId] = useState('');
   const [editMsgId, setEditMsgId] = useState(null);
   const [editContent, setEditContent] = useState('');
-  const [theme, setTheme] = useState('light'); // light | dark
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light'); // light | dark
   const fileInputRef = useRef();
   const [search, setSearch] = useState('');
   const [messageCache, setMessageCache] = useState({}); // { groupId: [messages] }
@@ -1360,7 +1360,15 @@ function App() {
     xhr.send(formData);
   };
 
+  // 切換深色模式
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+  };
+
   // 完整的主題系統
+  const isDarkMode = theme === 'dark';
   const themeStyles = theme === 'dark' ? {
     // 深色模式 - 完全適應深色主題
     background: '#0d1117',
@@ -2325,7 +2333,28 @@ function App() {
 
   if (page === 'login' || page === 'register') {
     return (
-      <div style={{ maxWidth: 400, margin: '40px auto', fontFamily: 'sans-serif' }}>
+      <div style={{ maxWidth: 400, margin: '40px auto', fontFamily: 'sans-serif', background: themeStyles.background, color: themeStyles.color, minHeight: '100vh', padding: '20px' }}>
+        {/* 深色模式切換按鈕 */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'fixed',
+            top: 20,
+            right: 20,
+            padding: '10px 20px',
+            borderRadius: 25,
+            border: 'none',
+            background: themeStyles.buttonSecondary,
+            color: themeStyles.color,
+            cursor: 'pointer',
+            fontSize: 20,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s'
+          }}
+          title={theme === 'light' ? '切換到深色模式' : '切換到淺色模式'}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
         <h2>{page === 'login' ? '登入' : '註冊'}</h2>
         <form onSubmit={e => { e.preventDefault(); handleAuth(page); }}>
           <input
@@ -2597,11 +2626,11 @@ function App() {
             </div>
             {/* 語音通話彈窗 */}
             {callState.visible && (
-              <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0005', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 2px 16px #0004', minWidth: 320, maxWidth: 400, padding: 32, position: 'relative', textAlign: 'center' }}>
-                  {callState.status === 'calling' && <div>正在呼叫對方...</div>}
-                  {callState.status === 'incoming' && <div>來電：{callState.fromUsername || callState.from}</div>}
-                  {callState.status === 'accepted' && <div>通話中...</div>}
+              <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ background: themeStyles.cardBg, color: themeStyles.color, borderRadius: 10, boxShadow: isDarkMode ? '0 2px 16px rgba(0,0,0,0.5)' : '0 2px 16px rgba(0,0,0,0.2)', minWidth: 320, maxWidth: 400, padding: 32, position: 'relative', textAlign: 'center', border: `1px solid ${themeStyles.border}` }}>
+                  {callState.status === 'calling' && <div style={{ fontSize: 18, marginBottom: 16 }}>正在呼叫對方...</div>}
+                  {callState.status === 'incoming' && <div style={{ fontSize: 18, marginBottom: 16 }}>來電：{callState.fromUsername || callState.from}</div>}
+                  {callState.status === 'accepted' && <div style={{ fontSize: 18, marginBottom: 16 }}>通話中...</div>}
                   {/* 視訊通話顯示 video */}
                   {callState.type === 'video' && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '12px 0' }}>
@@ -2978,8 +3007,8 @@ function App() {
                         </div>
                         {/* 操作選單（右鍵觸發） */}
                         {openActionMenuId === msg._id && (
-                          <div className="menu-anim" style={{ position: 'fixed', left: contextMenuPos?.x, top: contextMenuPos?.y, background: '#fff', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px #0002', zIndex: 10000, minWidth: 80 }}>
-                            {isMe && <button onClick={() => { startEditMessage(msg); setOpenActionMenuId(null); }} className="button-secondary" style={{ width: '100%', borderRadius: 0, borderBottom: '1px solid #eee' }}>編輯</button>}
+                          <div className="menu-anim" style={{ position: 'fixed', left: contextMenuPos?.x, top: contextMenuPos?.y, background: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`, borderRadius: 6, boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)', zIndex: 10000, minWidth: 80 }}>
+                            {isMe && <button onClick={() => { startEditMessage(msg); setOpenActionMenuId(null); }} className="button-secondary" style={{ width: '100%', borderRadius: 0, borderBottom: `1px solid ${themeStyles.divider}` }}>編輯</button>}
                             {(msg.type === 'image' || msg.type === 'video') && (
                               <button onClick={() => { downloadFile(msg); setOpenActionMenuId(null); }} className="button-secondary" style={{ width: '100%', borderRadius: 0, borderBottom: '1px solid #eee' }}>下載</button>
                             )}
@@ -3132,18 +3161,18 @@ function App() {
       )}
       {/* 上傳進度條 UI */}
       {uploadProgress > 0 && (
-        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', background: '#fff', border: '1px solid #2196f3', borderRadius: 8, padding: '8px 24px', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', background: themeStyles.cardBg, color: themeStyles.color, border: `1px solid ${themeStyles.buttonInfo}`, borderRadius: 8, padding: '8px 24px', zIndex: 1000, boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)' }}>
           上傳中... {uploadProgress}%
-          <div style={{ width: 200, height: 8, background: '#eee', borderRadius: 4, marginTop: 4 }}>
+          <div style={{ width: 200, height: 8, background: themeStyles.divider, borderRadius: 4, marginTop: 4 }}>
             <div style={{ width: `${uploadProgress}%`, height: 8, background: '#2196f3', borderRadius: 4 }} />
           </div>
         </div>
       )}
       {/* 推播日誌查詢頁 Modal */}
       {showPushLog && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#0008', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: 24, borderRadius: 8, maxWidth: 900, width: '90%', maxHeight: '90vh', overflow: 'auto', position: 'relative' }}>
-            <h2>推播日誌查詢</h2>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: themeStyles.cardBg, color: themeStyles.color, padding: 24, borderRadius: 8, maxWidth: 900, width: '90%', maxHeight: '90vh', overflow: 'auto', position: 'relative', border: `1px solid ${themeStyles.border}` }}>
+            <h2 style={{ color: themeStyles.color }}>推播日誌查詢</h2>
             <button onClick={() => setShowPushLog(false)} style={{ position: 'absolute', right: 32, top: 24 }}>關閉</button>
             {/* 篩選條件 */}
             <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -3201,9 +3230,9 @@ function App() {
             {pushLogLoading ? <div>載入中...</div> : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead>
-                  <tr style={{ background: '#f5f5f5' }}>
-                    <th>時間</th>
-                    <th>型別</th>
+                  <tr style={{ background: themeStyles.sidebarBg, color: themeStyles.color }}>
+                    <th style={{ padding: 8, borderBottom: `1px solid ${themeStyles.border}` }}>時間</th>
+                    <th style={{ padding: 8, borderBottom: `1px solid ${themeStyles.border}` }}>型別</th>
                     <th>標題</th>
                     <th>內容</th>
                     <th>狀態</th>
@@ -3230,7 +3259,7 @@ function App() {
         </div>
       )}
       {showMention && mentionList.length > 0 && (
-        <div style={{ position: 'absolute', background: '#fff', border: '1px solid #ccc', borderRadius: 6, zIndex: 100, left: 0, top: -40, minWidth: 120, boxShadow: '0 2px 8px #0002' }}>
+        <div style={{ position: 'absolute', background: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`, borderRadius: 6, zIndex: 100, left: 0, top: -40, minWidth: 120, boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)' }}>
           {mentionList.map((u, i) => (
             <div
               key={u._id}
@@ -3242,25 +3271,53 @@ function App() {
           ))}
         </div>
       )}
+      {/* 深色模式切換按鈕 */}
+      {page === 'chat' && (
+        <button
+          onClick={toggleTheme}
+          style={{
+            position: 'fixed',
+            top: 12,
+            right: 180,
+            zIndex: 1001,
+            padding: '10px 16px',
+            borderRadius: 25,
+            border: 'none',
+            background: themeStyles.buttonSecondary,
+            color: themeStyles.color,
+            cursor: 'pointer',
+            fontSize: 20,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s'
+          }}
+          title={theme === 'light' ? '切換到深色模式' : '切換到淺色模式'}
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+      )}
       {/* 會員中心按鈕 */}
       {page === 'chat' && (
         <button
-          style={profileBtnStyle}
+          style={{
+            ...profileBtnStyle,
+            background: themeStyles.buttonSecondary,
+            color: themeStyles.color
+          }}
           onClick={() => { setShowProfile(true); fetchProfile(); }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,200,200,0.72)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          onMouseEnter={e => e.currentTarget.style.background = theme === 'dark' ? 'rgba(100,100,100,0.5)' : 'rgba(200,200,200,0.72)'}
+          onMouseLeave={e => e.currentTarget.style.background = themeStyles.buttonSecondary}
         >
           {renderAvatar(profile.username, groupInfo, profile, true)}
-          <span style={{ fontWeight: 'bold', fontSize: 18, color: '#222', marginRight: 8 }}>{profile.username || username}</span>
+          <span style={{ fontWeight: 'bold', fontSize: 18, color: themeStyles.color, marginRight: 8 }}>{profile.username || username}</span>
         </button>
       )}
       {/* 會員中心 Modal */}
       {showProfile && (
-        <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: '#0008', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {console.log('會員中心顯示 - profile:', profile, 'avatar:', profile.avatar)}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 360, position: 'relative' }}>
-            <button onClick={() => setShowProfile(false)} style={{ position: 'absolute', top: 16, right: 16, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-            <h2>會員中心</h2>
+          <div style={{ background: themeStyles.cardBg, color: themeStyles.color, borderRadius: 12, padding: 32, minWidth: 360, position: 'relative', border: `1px solid ${themeStyles.border}` }}>
+            <button onClick={() => setShowProfile(false)} style={{ position: 'absolute', top: 16, right: 16, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: themeStyles.color }}>✕</button>
+            <h2 style={{ color: themeStyles.color }}>會員中心</h2>
             {avatarSuccess && (
               <div className={`avatar-success-fade${avatarSuccess ? ' show' : ''}`}
                 style={{
@@ -3375,12 +3432,12 @@ function App() {
                         alert('更新失敗：' + (err.message || '請重新登入'));
                       }
                     }}>儲存</button>
-                    <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingUsername(false)}>取消</button>
+                    <button className="button-secondary" style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4 }} onClick={() => setEditingUsername(false)}>取消</button>
                   </>
                 ) : (
                   <>
                     {profile.username}
-                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => { setEditingUsername(true); setNewUsername(profile.username); }}>修改</button>
+                    <button className="button-secondary" style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4 }} onClick={() => { setEditingUsername(true); setNewUsername(profile.username); }}>修改</button>
                   </>
                 )}
               </div>
@@ -3420,12 +3477,12 @@ function App() {
                         alert('更新失敗：' + (err.message || '請重新登入'));
                       }
                     }}>儲存</button>
-                    <button style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => setEditingDiscriminator(false)}>取消</button>
+                    <button className="button-secondary" style={{ marginLeft: 4, padding: '4px 12px', borderRadius: 4 }} onClick={() => setEditingDiscriminator(false)}>取消</button>
                   </>
                 ) : (
                   <>
                     {discriminator || profile.discriminator}
-                    <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }} onClick={() => { setEditingDiscriminator(true); setNewDiscriminator(discriminator || profile.discriminator); }}>修改</button>
+                    <button className="button-secondary" style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4 }} onClick={() => { setEditingDiscriminator(true); setNewDiscriminator(discriminator || profile.discriminator); }}>修改</button>
                   </>
                 )}
               </div>
@@ -3456,9 +3513,9 @@ function App() {
       {/* 頭像裁切模態框 */}
       {showCropModal && avatarPreview && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, maxWidth: '90vw', maxHeight: '90vh', position: 'relative' }}>
-            <button onClick={() => setShowCropModal(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', zIndex: 1 }}>✕</button>
-            <h3 style={{ marginBottom: 16 }}>裁切頭像</h3>
+          <div style={{ background: themeStyles.cardBg, color: themeStyles.color, borderRadius: 12, padding: 24, maxWidth: '90vw', maxHeight: '90vh', position: 'relative', border: `1px solid ${themeStyles.border}` }}>
+            <button onClick={() => setShowCropModal(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', zIndex: 1, color: themeStyles.color }}>✕</button>
+            <h3 style={{ marginBottom: 16, color: themeStyles.color }}>裁切頭像</h3>
             <div style={{ marginBottom: 16 }}>
               <ReactCrop
                 crop={crop}
