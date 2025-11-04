@@ -1909,28 +1909,28 @@ function App() {
         background: #e0e0e0 !important;
       }
       button:active, .global-btn:active {
-        background: #e0e0e0 !important;
+        opacity: 0.8;
       }
       .button-primary {
-        background: #2196f3 !important;
-        color: #fff !important;
+        background: ${isDarkMode ? '#1976d2' : '#2196f3'};
+        color: #fff;
       }
       .button-primary:hover {
-        background: #1976d2 !important;
+        background: ${isDarkMode ? '#1565c0' : '#1976d2'};
       }
       .button-secondary {
-        background: #f5f5f5 !important;
-        color: #222 !important;
+        background: ${isDarkMode ? '#424242' : '#f5f5f5'};
+        color: ${isDarkMode ? '#fff' : '#222'};
       }
       .button-secondary:hover {
-        background: #e0e0e0 !important;
+        background: ${isDarkMode ? '#616161' : '#e0e0e0'};
       }
       .button-danger {
-        background: #e53935 !important;
-        color: #fff !important;
+        background: ${isDarkMode ? '#c62828' : '#e53935'};
+        color: #fff;
       }
       .button-danger:hover {
-        background: #b71c1c !important;
+        background: ${isDarkMode ? '#b71c1c' : '#c62828'};
       }
     `;
     document.head.appendChild(style);
