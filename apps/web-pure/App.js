@@ -128,7 +128,7 @@ function getUserAvatar(username, groupInfo, profile, senderInfo = null) {
 }
 
 // 新增：渲染頭像組件
-function renderAvatar(username, groupInfo, profile, isMe = false, senderInfo = null) {
+function renderAvatar(username, groupInfo, profile, isMe = false, senderInfo = null, theme = 'light') {
   const avatarUrl = getUserAvatar(username, groupInfo, profile, senderInfo);
   const avatarStyle = {
     width: 36,
@@ -137,8 +137,8 @@ function renderAvatar(username, groupInfo, profile, isMe = false, senderInfo = n
     objectFit: 'cover',
     marginLeft: isMe ? 10 : 0,
     marginRight: isMe ? 0 : 10,
-    border: isMe ? `1.5px solid ${themeStyles.buttonInfo}` : `1.5px solid ${themeStyles.border}`,
-    background: themeStyles.cardBg
+    border: isMe ? (theme === 'dark' ? '1.5px solid #1f6feb' : '1.5px solid #0969da') : (theme === 'dark' ? '1.5px solid #30363d' : '1.5px solid #d0d7de'),
+    background: theme === 'dark' ? '#161b22' : '#ffffff'
   };
 
   if (avatarUrl) {
@@ -2717,7 +2717,7 @@ function App() {
                     >
                       <div ref={messageRefs.current[msg._id]} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', marginBottom: 10 }}>
                         {/* 頭像 - 傳遞 senderInfo */}
-                        {renderAvatar(msg.sender, groupInfo, profile, isMe, msg.senderInfo)}
+                        {renderAvatar(msg.sender, groupInfo, profile, isMe, msg.senderInfo, theme)}
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
                         <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 6 }}>
                           {/* 泡泡本體在這裡渲染 */}
@@ -3307,7 +3307,7 @@ function App() {
           onMouseEnter={e => e.currentTarget.style.background = theme === 'dark' ? 'rgba(100,100,100,0.5)' : 'rgba(200,200,200,0.72)'}
           onMouseLeave={e => e.currentTarget.style.background = themeStyles.buttonSecondary}
         >
-          {renderAvatar(profile.username, groupInfo, profile, true)}
+          {renderAvatar(profile.username, groupInfo, profile, true, null, theme)}
           <span style={{ fontWeight: 'bold', fontSize: 18, color: themeStyles.color, marginRight: 8 }}>{profile.username || username}</span>
         </button>
       )}
