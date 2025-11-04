@@ -137,8 +137,8 @@ function renderAvatar(username, groupInfo, profile, isMe = false, senderInfo = n
     objectFit: 'cover',
     marginLeft: isMe ? 10 : 0,
     marginRight: isMe ? 0 : 10,
-    border: isMe ? '1.5px solid #2196f3' : '1.5px solid #bbb',
-    background: '#fff'
+    border: isMe ? `1.5px solid ${themeStyles.buttonInfo}` : `1.5px solid ${themeStyles.border}`,
+    background: themeStyles.cardBg
   };
 
   if (avatarUrl) {
@@ -2491,7 +2491,7 @@ function App() {
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 placeholder="搜尋訊息/檔名..."
-                style={{ flex: 1, padding: 6, borderRadius: 6, border: '1px solid #ccc', marginRight: 8 }}
+                style={{ flex: 1, padding: 6, borderRadius: 6, border: `1px solid ${themeStyles.border}`, marginRight: 8, background: themeStyles.input, color: themeStyles.color }}
               />
               <button onClick={() => setSearchInput('')}>清除</button>
             </div>
@@ -2855,9 +2855,9 @@ function App() {
                                         e.target.nextSibling.style.display = 'block';
                                       }}
                                     />
-                                    <div style={{ display: 'none', padding: '8px 12px', background: '#f5f5f5', borderRadius: 8, fontSize: 12, color: '#666' }}>
+                                    <div style={{ display: 'none', padding: '8px 12px', background: themeStyles.cardBg, borderRadius: 8, fontSize: 12, color: themeStyles.textSecondary, border: `1px solid ${themeStyles.border}` }}>
                                       <span>圖片載入失敗</span>
-                                      <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>URL: {msg.url}</div>
+                                      <div style={{ fontSize: 10, color: themeStyles.textSecondary, marginTop: 4 }}>URL: {msg.url}</div>
                                       <button onClick={() => {
                                         const finalUrl = msg.url.startsWith('http') ? msg.url : API_URL + msg.url;
                                         console.log('嘗試在新視窗開啟圖片:', finalUrl);
@@ -3090,7 +3090,7 @@ function App() {
           <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: 20 }}>群組資訊</h3>
           <div style={{ marginBottom: 12 }}>
             <b>公告：</b>
-            <div style={{ background: '#fff', padding: 8, borderRadius: 4, minHeight: 40, marginBottom: 4 }}>{groupInfo.announcement || '（無公告）'}</div>
+            <div style={{ background: themeStyles.input, padding: 8, borderRadius: 4, minHeight: 40, marginBottom: 4, border: `1px solid ${themeStyles.border}`, color: themeStyles.color }}>{groupInfo.announcement || '（無公告）'}</div>
             {/* 僅 owner/admin 可編輯公告 */}
             {(groupInfo.owner && groupInfo.owner.username === username) || (groupInfo.admins && groupInfo.admins.some(a => a.username === username)) ? (
               <button style={{ marginBottom: 8 }} onClick={() => {
@@ -3116,7 +3116,7 @@ function App() {
                         (m.avatar.startsWith('http') ? m.avatar : API_URL + m.avatar) :
                         'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
                       alt={m.username}
-                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
+                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${themeStyles.border}`, background: themeStyles.cardBg, marginRight: 8 }}
                     />
                     <span>{m.username} {role}</span>
                     {m._id !== userId && (
@@ -3177,9 +3177,9 @@ function App() {
             {/* 篩選條件 */}
             <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               {isAdmin && (
-                <input placeholder="userId" style={{ width: 120 }} value={pushLogUserId || ''} onChange={e => setPushLogUserId(e.target.value)} />
+                <input placeholder="userId" style={{ width: 120, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} value={pushLogUserId || ''} onChange={e => setPushLogUserId(e.target.value)} />
               )}
-              <select value={pushLogType || ''} onChange={e => setPushLogType(e.target.value)} style={{ width: 120 }}>
+              <select value={pushLogType || ''} onChange={e => setPushLogType(e.target.value)} style={{ width: 120, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }}>
                 <option value="">全部型別</option>
                 <option value="mention">@提及</option>
                 <option value="announcement">公告</option>
@@ -3188,8 +3188,8 @@ function App() {
                 <option value="file">檔案</option>
                 <option value="system">系統</option>
               </select>
-              <input type="date" value={pushLogStart} onChange={e => setPushLogStart(e.target.value)} />
-              <input type="date" value={pushLogEnd} onChange={e => setPushLogEnd(e.target.value)} />
+              <input type="date" value={pushLogStart} onChange={e => setPushLogStart(e.target.value)} style={{ background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} />
+              <input type="date" value={pushLogEnd} onChange={e => setPushLogEnd(e.target.value)} style={{ background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} />
               <button onClick={() => { setPushLogSkip(0); fetchPushLogs(pushLogUserId, pushLogType, 0, pushLogLimit, pushLogStart, pushLogEnd); }}>查詢</button>
             </div>
             {/* 分頁按鈕 */}
@@ -3242,14 +3242,14 @@ function App() {
                 </thead>
                 <tbody>
                   {pushLogs.map(l => (
-                    <tr key={l._id} style={{ background: l.status === 'fail' ? '#ffebee' : undefined }}>
-                      <td>{new Date(l.createdAt).toLocaleString()}</td>
-                      <td>{l.type}</td>
-                      <td>{l.title}</td>
-                      <td>{l.body}</td>
-                      <td style={{ color: l.status === 'fail' ? 'red' : 'green' }}>{l.status}</td>
-                      <td>{l.error}</td>
-                      <td><pre style={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{JSON.stringify(l.data)}</pre></td>
+                    <tr key={l._id} style={{ background: l.status === 'fail' ? (theme === 'dark' ? '#3d1f1f' : '#ffebee') : undefined, borderBottom: `1px solid ${themeStyles.border}` }}>
+                      <td style={{ padding: 8, color: themeStyles.color }}>{new Date(l.createdAt).toLocaleString()}</td>
+                      <td style={{ padding: 8, color: themeStyles.color }}>{l.type}</td>
+                      <td style={{ padding: 8, color: themeStyles.color }}>{l.title}</td>
+                      <td style={{ padding: 8, color: themeStyles.color }}>{l.body}</td>
+                      <td style={{ padding: 8, color: l.status === 'fail' ? '#e53935' : '#4caf50' }}>{l.status}</td>
+                      <td style={{ padding: 8, color: themeStyles.color }}>{l.error}</td>
+                      <td style={{ padding: 8 }}><pre style={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: themeStyles.color }}>{JSON.stringify(l.data)}</pre></td>
                     </tr>
                   ))}
                 </tbody>
@@ -3263,7 +3263,7 @@ function App() {
           {mentionList.map((u, i) => (
             <div
               key={u._id}
-              style={{ padding: '4px 12px', background: i === mentionIndex ? '#bde0fe' : 'transparent', cursor: 'pointer' }}
+              style={{ padding: '4px 12px', background: i === mentionIndex ? themeStyles.buttonInfo : 'transparent', cursor: 'pointer', color: i === mentionIndex ? '#fff' : themeStyles.color }}
               onMouseDown={e => { e.preventDefault(); insertMention(u); }}
             >
               @{u.username}
@@ -3404,7 +3404,7 @@ function App() {
                     <input
                       value={newUsername}
                       onChange={e => setNewUsername(e.target.value)}
-                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc', width: 150 }}
+                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: `1px solid ${themeStyles.border}`, width: 150, background: themeStyles.input, color: themeStyles.color }}
                       placeholder="輸入新用戶名"
                     />
                     <button style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 4, border: 'none', background: '#2196f3', color: '#fff', cursor: 'pointer' }} onClick={async () => {
@@ -3448,7 +3448,7 @@ function App() {
                     <input
                       value={newDiscriminator}
                       onChange={e => setNewDiscriminator(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc', width: 80 }}
+                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: `1px solid ${themeStyles.border}`, width: 80, background: themeStyles.input, color: themeStyles.color }}
                       placeholder="4位數字"
                       maxLength={4}
                     />
@@ -3493,7 +3493,7 @@ function App() {
                     <input
                       value={newEmail}
                       onChange={e => setNewEmail(e.target.value)}
-                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: '1px solid #ccc', width: 180 }}
+                      style={{ marginLeft: 8, padding: 4, borderRadius: 4, border: `1px solid ${themeStyles.border}`, width: 180, background: themeStyles.input, color: themeStyles.color }}
                     />
                     <button className="button-primary" style={{ marginLeft: 8 }} onClick={handleEmailSave}>儲存</button>
                     <button style={{ marginLeft: 4 }} onClick={() => setEditingEmail(false)}>取消</button>
@@ -3535,10 +3535,10 @@ function App() {
       )}
       {/* 群組成員完整列表彈窗 */}
       {showGroupMemberList && currentGroupObj && hasGroupMembers && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowGroupMemberList(false)}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, minWidth: 320, maxHeight: '80vh', overflowY: 'auto', position: 'relative' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowGroupMemberList(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-            <h3>群組成員 ({groupMembers.length})</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowGroupMemberList(false)}>
+          <div style={{ background: themeStyles.cardBg, borderRadius: 12, padding: 24, minWidth: 320, maxHeight: '80vh', overflowY: 'auto', position: 'relative', border: `1px solid ${themeStyles.border}` }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowGroupMemberList(false)} style={{ position: 'absolute', top: 12, right: 12, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: themeStyles.color }}>✕</button>
+            <h3 style={{ color: themeStyles.color }}>群組成員 ({groupMembers.length})</h3>
             <ul style={{ padding: 0, listStyle: 'none' }}>
               {groupMembers.map((u, idx) => (
                 <li key={u._id || idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
@@ -3547,7 +3547,7 @@ function App() {
                       (u.avatar.startsWith('http') ? u.avatar : API_URL + u.avatar) :
                       'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
                     alt={u.username}
-                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #bbb', background: '#fff', marginRight: 8 }}
+                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${themeStyles.border}`, background: themeStyles.cardBg, marginRight: 8 }}
                   />
                   <span style={{ fontSize: 15, color: '#222', wordBreak: 'break-all' }}>{u.username}</span>
                 </li>
