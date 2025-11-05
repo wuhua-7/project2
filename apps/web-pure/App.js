@@ -246,33 +246,19 @@ const globalBtnStyle = {
 }
 `}</style>
 
-// 圖片/影片牆組件
-function MediaWall({ groupId, uploadKey, isAdmin }) {
-  const [mediaMessages, setMediaMessages] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+// 消息緩存
+const messageCache = new Map();
 
-  React.useEffect(() => {
-    const fetchMedia = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_URL}/api/group/${groupId}/messages`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        // 只顯示圖片和影片
-        const media = data.filter(m => m.type === 'image' || m.type === 'video');
-        setMediaMessages(media);
-      } catch (err) {
-        console.error('獲取媒體失敗:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (groupId) fetchMedia();
-  }, [groupId, uploadKey]);
+// 圖片/影片牆組件 - 使用 memo 優化
+const MediaWall = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
+  // 直接從傳入的 messages 過濾，避免重複請求
+  const mediaMessages = React.useMemo(() => {
+    return messages.filter(m => m.type === 'image' || m.type === 'video');
+  }, [messages]);
 
-  if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>載入中...</div>;
-  if (mediaMessages.length === 0) return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有圖片或影片</div>;
+  if (mediaMessages.length === 0) {
+    return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有圖片或影片</div>;
+  }
 
   return (
     <div style={{ padding: 16, overflowY: 'auto', height: 'calc(100vh - 280px)' }}>
@@ -283,12 +269,14 @@ function MediaWall({ groupId, uploadKey, isAdmin }) {
               <img
                 src={msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
                 alt="圖片"
+                loading="lazy"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                 onClick={() => window.open(msg.url.startsWith('http') ? msg.url : API_URL + msg.url, '_blank')}
               />
             ) : (
               <video
                 src={msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
+                preload="metadata"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                 onClick={() => window.open(msg.url.startsWith('http') ? msg.url : API_URL + msg.url, '_blank')}
               />
@@ -298,35 +286,18 @@ function MediaWall({ groupId, uploadKey, isAdmin }) {
       </div>
     </div>
   );
-}
+});
 
-// 文件櫃組件
-function FileCabinet({ groupId, uploadKey, isAdmin }) {
-  const [fileMessages, setFileMessages] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+// 文件櫃組件 - 使用 memo 優化
+const FileCabinet = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
+  // 直接從傳入的 messages 過濾，避免重複請求
+  const fileMessages = React.useMemo(() => {
+    return messages.filter(m => m.type === 'file');
+  }, [messages]);
 
-  React.useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_URL}/api/group/${groupId}/messages`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        // 只顯示文件
-        const files = data.filter(m => m.type === 'file');
-        setFileMessages(files);
-      } catch (err) {
-        console.error('獲取文件失敗:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (groupId) fetchFiles();
-  }, [groupId, uploadKey]);
-
-  if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>載入中...</div>;
-  if (fileMessages.length === 0) return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有文件</div>;
+  if (fileMessages.length === 0) {
+    return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有文件</div>;
+  }
 
   return (
     <div style={{ padding: 16, overflowY: 'auto', height: 'calc(100vh - 280px)' }}>
@@ -350,7 +321,7 @@ function FileCabinet({ groupId, uploadKey, isAdmin }) {
       </div>
     </div>
   );
-}
+});
 
 function App() {
   const [page, setPage] = useState('login'); // login | register | chat</div></div>
@@ -937,47 +908,75 @@ function App() {
     console.log('掛斷通話', { from: userId, to: callState.to || callState.from, groupId: callState.groupId });
   };
 
-  // 分頁查詢訊息
-  const fetchMessages = async (groupId, before = '', append = false) => {
+  // 分頁查詢訊息 - 優化版本
+  const fetchMessages = React.useCallback(async (groupId, before = '', append = false) => {
     if (!groupId || loadingMoreMessages) return;
+    
+    // 檢查緩存
+    const cacheKey = `${groupId}-${before}-${search}`;
+    if (!append && messageCache.has(cacheKey)) {
+      const cached = messageCache.get(cacheKey);
+      setMessages(cached.messages);
+      setHasMoreMessages(cached.hasMore);
+      return;
+    }
+    
     setLoadingMoreMessages(true);
     let prevHeight = 0;
     if (append && messagesBoxRef.current) {
       prevHeight = messagesBoxRef.current.scrollHeight;
     }
-    let url = `${API_URL}/api/group/${groupId}/messages?limit=30`;
-    if (before) url += `&before=${before}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (res.ok && data.messages) {
-      setHasMoreMessages(data.hasMore);
-      setMessages(prev => append ? [...data.messages, ...prev] : data.messages);
-      // 保持滾動位置不跳動
-      setTimeout(() => {
-        if (append && messagesBoxRef.current) {
-          messagesBoxRef.current.scrollTop = messagesBoxRef.current.scrollHeight - prevHeight;
+    
+    try {
+      let url = `${API_URL}/api/group/${groupId}/messages?limit=30`;
+      if (before) url += `&before=${before}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      
+      if (res.ok && data.messages) {
+        setHasMoreMessages(data.hasMore);
+        setMessages(prev => append ? [...data.messages, ...prev] : data.messages);
+        
+        // 緩存結果（只緩存非追加的請求）
+        if (!append) {
+          messageCache.set(cacheKey, { messages: data.messages, hasMore: data.hasMore });
+          // 限制緩存大小
+          if (messageCache.size > 10) {
+            const firstKey = messageCache.keys().next().value;
+            messageCache.delete(firstKey);
+          }
         }
-      }, 0);
-    }
-
-    // 如果不是追加載入，且群組信息不存在，則自動獲取群組信息
-    if (!append && !groupInfo) {
-      try {
-        const groupRes = await fetch(`${API_URL}/api/group/info/${groupId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const groupData = await groupRes.json();
-        if (groupRes.ok) {
-          setGroupInfo(groupData);
-        }
-      } catch (error) {
-        console.warn('獲取群組信息失敗:', error);
+        
+        // 保持滾動位置不跳動
+        setTimeout(() => {
+          if (append && messagesBoxRef.current) {
+            messagesBoxRef.current.scrollTop = messagesBoxRef.current.scrollHeight - prevHeight;
+          }
+        }, 0);
       }
-    }
 
-    setLoadingMoreMessages(false);
-  };
+      // 如果不是追加載入，且群組信息不存在，則自動獲取群組信息
+      if (!append && !groupInfo) {
+        try {
+          const groupRes = await fetch(`${API_URL}/api/group/info/${groupId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const groupData = await groupRes.json();
+          if (groupRes.ok) {
+            setGroupInfo(groupData);
+          }
+        } catch (error) {
+          console.warn('獲取群組信息失敗:', error);
+        }
+      }
+    } catch (error) {
+      console.error('獲取消息失敗:', error);
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  }, [token, search, loadingMoreMessages, groupInfo]);
 
   // 初次載入/切換群組/搜尋時載入最新訊息
   useEffect(() => {
@@ -2651,8 +2650,8 @@ function App() {
           </div>
         )}
         {/* 根據 Tab 顯示內容 */}
-        {currentGroup && activeTab === 'media' && <MediaWall groupId={currentGroup} uploadKey={uploadKey} isAdmin={isAdmin} />}
-        {currentGroup && activeTab === 'files' && <FileCabinet groupId={currentGroup} uploadKey={uploadKey} isAdmin={isAdmin} />}
+        {currentGroup && activeTab === 'media' && <MediaWall groupId={currentGroup} uploadKey={uploadKey} isAdmin={isAdmin} messages={messages} />}
+        {currentGroup && activeTab === 'files' && <FileCabinet groupId={currentGroup} uploadKey={uploadKey} isAdmin={isAdmin} messages={messages} />}
         {/* 聊天內容只在 chat tab 顯示 */}
         {activeTab === 'chat' && (
           <>
