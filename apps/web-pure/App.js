@@ -1410,12 +1410,12 @@ function App() {
     sidebarBg: '#f2f3f5',
     sidebarHover: '#e3e5e8',
     buttonPrimary: '#5865f2',
-    buttonSecondary: '#4f545c',
+    buttonSecondary: '#ffffff',
     buttonDanger: '#ed4245',
     buttonSuccess: '#3ba55d',
     buttonInfo: '#5865f2',
     buttonWarning: '#faa61a',
-    buttonText: '#ffffff',
+    buttonText: '#2e3338',
     cardBg: '#ffffff',
     headerBg: '#f2f3f5',
     textSecondary: '#4e5058',
@@ -1914,18 +1914,18 @@ function App() {
       }
       button, .global-btn {
         padding: 8px 16px !important;
-        border-radius: 4px !important;
+        border-radius: 8px !important;
         border: none !important;
         background: ${themeStyles.buttonSecondary} !important;
-        color: ${themeStyles.color} !important;
+        color: ${isDarkMode ? themeStyles.color : themeStyles.textSecondary} !important;
         cursor: pointer !important;
         font-size: 14px !important;
         font-weight: 500 !important;
         transition: background 0.17s ease, color 0.17s ease !important;
-        box-shadow: none !important;
+        box-shadow: ${isDarkMode ? 'none' : '0 1px 3px rgba(0,0,0,0.08)'} !important;
       }
       button:hover, .global-btn:hover {
-        background: ${isDarkMode ? '#5d6269' : '#d7d9dc'} !important;
+        background: ${isDarkMode ? '#5d6269' : '#f6f7f8'} !important;
       }
       button:active, .global-btn:active {
         opacity: 0.8;
@@ -2426,9 +2426,9 @@ function App() {
 
   // 聊天室頁面
   return (
-    <div style={{ maxWidth: '100%', margin: 0, padding: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
+    <div style={{ maxWidth: '100%', margin: 0, padding: '8px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color, gap: '8px' }}>
       {/* 左側群組清單 */}
-      <div style={{ width: 240, marginRight: 0, background: themeStyles.sidebarBg, padding: '20px 8px', minHeight: '100vh', borderRight: `1px solid ${themeStyles.divider}` }}>
+      <div style={{ width: 240, background: themeStyles.sidebarBg, padding: '16px 8px', minHeight: 'calc(100vh - 16px)', borderRadius: '8px', boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' }}>
         <h3 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: themeStyles.textSecondary, marginBottom: 8, paddingLeft: 8 }}>我的群組</h3>
         <ul style={{ padding: 0, listStyle: 'none' }}>
           {(Array.isArray(groups) ? groups : []).map((g, idx) => (
@@ -2439,7 +2439,7 @@ function App() {
                   background: currentGroup === g._id ? themeStyles.groupItemActive : 'transparent',
                   color: currentGroup === g._id ? '#fff' : themeStyles.color,
                   border: 'none',
-                  borderRadius: 4,
+                  borderRadius: 8,
                   padding: '8px 12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -2447,7 +2447,8 @@ function App() {
                   cursor: 'pointer',
                   textAlign: 'left',
                   fontWeight: currentGroup === g._id ? 600 : 500,
-                  transition: 'background 0.17s ease'
+                  transition: 'background 0.17s ease',
+                  boxShadow: currentGroup === g._id && !isDarkMode ? '0 2px 4px rgba(88,101,242,0.2)' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (currentGroup !== g._id) {
@@ -2505,21 +2506,46 @@ function App() {
         }} className="button-secondary" style={{ marginTop: 16, width: '100%' }}>推播日誌查詢</button>
       </div>
       {/* 中間聊天區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: themeStyles.messageBg }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${themeStyles.divider}`, background: themeStyles.headerBg, boxShadow: '0 1px 0 rgba(0,0,0,0.1)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: themeStyles.messageBg, borderRadius: '8px', overflow: 'hidden', boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${themeStyles.divider}`, background: themeStyles.headerBg, boxShadow: isDarkMode ? 'none' : '0 1px 0 rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: themeStyles.color }}># {currentGroup && groups.find(g => g._id === currentGroup)?.name}</span>
           </div>
-          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="button-secondary" style={{ marginLeft: 8, padding: '6px 12px', fontSize: 12 }}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              onClick={() => setTheme('light')} 
+              className="button-secondary" 
+              style={{ 
+                padding: '6px 12px', 
+                fontSize: 18, 
+                background: theme === 'light' ? themeStyles.buttonInfo : 'transparent',
+                color: theme === 'light' ? '#fff' : themeStyles.textSecondary,
+                border: theme === 'light' ? 'none' : `1px solid ${themeStyles.divider}`
+              }}
+            >
+              ☀️
+            </button>
+            <button 
+              onClick={() => setTheme('dark')} 
+              className="button-secondary" 
+              style={{ 
+                padding: '6px 12px', 
+                fontSize: 18,
+                background: theme === 'dark' ? themeStyles.buttonInfo : 'transparent',
+                color: theme === 'dark' ? '#fff' : themeStyles.textSecondary,
+                border: theme === 'dark' ? 'none' : `1px solid ${themeStyles.divider}`
+              }}
+            >
+              🌙
+            </button>
+          </div>
         </div>
         {/* 新增 Tab 切換 */}
         {currentGroup && (
           <div style={{ display: 'flex', gap: 4, padding: '0 16px', marginTop: 8 }}>
-            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : 'transparent', color: activeTab === 'chat' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>💬 聊天</button>
-            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : 'transparent', color: activeTab === 'media' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>🖼️ 圖片/影片</button>
-            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : 'transparent', color: activeTab === 'files' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>📁 文件</button>
+            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : 'transparent', color: activeTab === 'chat' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500, borderRadius: '8px' }}>💬 聊天</button>
+            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : 'transparent', color: activeTab === 'media' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500, borderRadius: '8px' }}>🖼️ 圖片/影片</button>
+            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : 'transparent', color: activeTab === 'files' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500, borderRadius: '8px' }}>📁 文件</button>
           </div>
         )}
         {/* 根據 Tab 顯示內容 */}
