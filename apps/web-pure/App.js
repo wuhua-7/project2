@@ -1974,15 +1974,15 @@ function App() {
 
   // 在App組件內部 useEffect 加全域樣式覆蓋
   React.useEffect(() => {
-    // 設置 body 背景色
-    document.body.style.background = themeStyles.background;
+    // 設置 body 背景色為淺灰色
+    document.body.style.background = themeStyles.sidebarBg;
     document.body.style.color = themeStyles.color;
     document.body.style.minHeight = '100vh';
     
     const style = document.createElement('style');
     style.innerHTML = `
       html, body {
-        background: ${themeStyles.background} !important;
+        background: ${themeStyles.sidebarBg} !important;
         color: ${themeStyles.color} !important;
         margin: 0;
         padding: 0;
@@ -2516,7 +2516,7 @@ function App() {
       display: 'flex', 
       flexDirection: window.innerWidth < 768 ? 'column' : 'row',
       minHeight: '100vh', 
-      background: themeStyles.background, 
+      background: themeStyles.sidebarBg, 
       color: themeStyles.color, 
       gap: '8px' 
     }}>
