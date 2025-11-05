@@ -2419,9 +2419,9 @@ function App() {
 
   // 聊天室頁面
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
       {/* 左側群組清單 */}
-      <div style={{ width: 180, marginRight: 16 }}>
+      <div style={{ width: 240, marginRight: 20 }}>
         <h3>我的群組</h3>
         <ul style={{ padding: 0, listStyle: 'none' }}>
           {(Array.isArray(groups) ? groups : []).map((g, idx) => (
@@ -2682,16 +2682,16 @@ function App() {
             )}
             <div ref={messagesBoxRef} onScroll={handleScroll} style={{
               border: `1px solid ${themeStyles.border}`,
-              minHeight: 200,
+              minHeight: 300,
               padding: '16px',
               marginBottom: 10,
-              height: 450,
+              height: 'calc(100vh - 280px)',
               overflowY: 'auto',
               background: theme === 'dark' ? 'linear-gradient(to bottom, #0d1117, #161b22)' : 'linear-gradient(to bottom, #ffffff, #f6f8fa)',
               position: 'relative',
-              width: '50vw',
-              maxWidth: 700,
-              minWidth: 320,
+              width: '70vw',
+              maxWidth: 1200,
+              minWidth: 400,
               borderRadius: 8,
               boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
             }}>
