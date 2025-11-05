@@ -359,17 +359,7 @@ function App() {
   const [mediaPreview, setMediaPreview] = useState(null); // {type, url}
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadKey, setUploadKey] = useState(0); // 用於觸發媒體牆/檔案櫃 reload
-  const [showPushLog, setShowPushLog] = useState(false);
-  const [pushLogs, setPushLogs] = useState([]);
-  const [pushLogLoading, setPushLogLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [pushLogUserId, setPushLogUserId] = useState('');
-  const [pushLogType, setPushLogType] = useState('');
-  const [pushLogSkip, setPushLogSkip] = useState(0);
-  const [pushLogLimit, setPushLogLimit] = useState(50);
-  const [pushLogStart, setPushLogStart] = useState('');
-  const [pushLogEnd, setPushLogEnd] = useState('');
-  const [pushLogStats, setPushLogStats] = useState({ typeCount: [], statusCount: [], total: [] });
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const messagesEndRef = useRef();
@@ -1671,26 +1661,6 @@ function App() {
     }
   };
 
-  // 查詢推播日誌
-  const fetchPushLogs = async (userId = '', type = '', skip = 0, limit = 50, start = '', end = '') => {
-    setPushLogLoading(true);
-    try {
-      const params = new URLSearchParams({ userId, type, skip, limit, start, end });
-      const res = await fetch(`${API_URL}/api/user/push-logs?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setPushLogs(data);
-      // 查詢統計
-      const statsRes = await fetch(`${API_URL}/api/user/push-logs/stats?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const stats = await statsRes.json();
-      setPushLogStats(stats);
-    } catch { }
-    setPushLogLoading(false);
-  };
-
   // 搜尋框 debounce 查詢
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
@@ -2067,6 +2037,13 @@ function App() {
       input:focus, textarea:focus, select:focus {
         outline: none !important;
         border: 1px solid ${themeStyles.buttonInfo} !important;
+      }
+      
+      /* 手機響應式 */
+      @media (max-width: 768px) {
+        body {
+          overflow-x: hidden;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -2531,9 +2508,27 @@ function App() {
 
   // 聊天室頁面
   return (
-    <div style={{ maxWidth: '100%', margin: 0, padding: '8px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color, gap: '8px' }}>
+    <div style={{ 
+      maxWidth: '100%', 
+      margin: 0, 
+      padding: '8px', 
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', 
+      display: 'flex', 
+      flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+      minHeight: '100vh', 
+      background: themeStyles.background, 
+      color: themeStyles.color, 
+      gap: '8px' 
+    }}>
       {/* 左側群組清單 */}
-      <div style={{ width: 240, background: themeStyles.sidebarBg, padding: '16px 8px', minHeight: 'calc(100vh - 16px)', borderRadius: '8px', boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <div style={{ 
+        width: window.innerWidth < 768 ? '100%' : '240px', 
+        background: themeStyles.sidebarBg, 
+        padding: '16px 8px', 
+        minHeight: window.innerWidth < 768 ? 'auto' : 'calc(100vh - 16px)', 
+        borderRadius: '8px', 
+        boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' 
+      }}>
         <h3 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: themeStyles.textSecondary, marginBottom: 8, paddingLeft: 8 }}>我的群組</h3>
         <ul style={{ padding: 0, listStyle: 'none' }}>
           {(Array.isArray(groups) ? groups : []).map((g, idx) => (
@@ -2832,15 +2827,15 @@ function App() {
             <div ref={messagesBoxRef} onScroll={handleScroll} style={{
               border: 'none',
               minHeight: 300,
-              padding: '16px',
+              padding: window.innerWidth < 768 ? '8px' : '16px',
               marginBottom: 10,
-              height: 'calc(100vh - 280px)',
+              height: window.innerWidth < 768 ? 'calc(100vh - 400px)' : 'calc(100vh - 280px)',
               overflowY: 'auto',
               background: themeStyles.messageBg,
               position: 'relative',
-              width: '70vw',
-              maxWidth: 1200,
-              minWidth: 400,
+              width: window.innerWidth < 768 ? '100%' : '70vw',
+              maxWidth: window.innerWidth < 768 ? '100%' : 1200,
+              minWidth: window.innerWidth < 768 ? '100%' : 400,
               borderRadius: 0,
               boxShadow: 'none'
             }}>
