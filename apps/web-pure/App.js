@@ -1370,65 +1370,65 @@ function App() {
   // 完整的主題系統
   const isDarkMode = theme === 'dark';
   const themeStyles = theme === 'dark' ? {
-    // 深色模式 - 完全適應深色主題
-    background: '#0d1117',
-    color: '#e6edf3',
-    bubbleMe: '#1f6feb',
-    bubbleOther: '#21262d',
-    input: '#0d1117',
-    border: '#30363d',
-    sidebarBg: '#010409',
-    sidebarHover: '#161b22',
-    buttonPrimary: '#238636',
-    buttonSecondary: '#30363d',
-    buttonDanger: '#da3633',
-    buttonSuccess: '#238636',
-    buttonInfo: '#1f6feb',
-    buttonWarning: '#bb8009',
+    // Discord 深色模式
+    background: '#36393f',
+    color: '#dcddde',
+    bubbleMe: '#5865f2',
+    bubbleOther: '#40444b',
+    input: '#40444b',
+    border: '#202225',
+    sidebarBg: '#2f3136',
+    sidebarHover: '#393c43',
+    buttonPrimary: '#5865f2',
+    buttonSecondary: '#4f545c',
+    buttonDanger: '#ed4245',
+    buttonSuccess: '#3ba55d',
+    buttonInfo: '#5865f2',
+    buttonWarning: '#faa61a',
     buttonText: '#ffffff',
-    cardBg: '#161b22',
-    headerBg: '#010409',
-    textSecondary: '#8b949e',
-    divider: '#21262d',
-    scrollbar: '#30363d',
-    scrollbarThumb: '#484f58',
-    messageBg: '#0d1117',
-    inputBorder: '#30363d',
-    groupItemBg: '#161b22',
-    groupItemHover: '#21262d',
-    groupItemActive: '#1f6feb',
-    tabActive: '#388bfd',
-    tabInactive: '#21262d',
+    cardBg: '#2f3136',
+    headerBg: '#202225',
+    textSecondary: '#b9bbbe',
+    divider: '#202225',
+    scrollbar: '#202225',
+    scrollbarThumb: '#1a1c1f',
+    messageBg: '#36393f',
+    inputBorder: '#202225',
+    groupItemBg: '#2f3136',
+    groupItemHover: '#393c43',
+    groupItemActive: '#5865f2',
+    tabActive: '#5865f2',
+    tabInactive: '#4f545c',
   } : {
-    // 淺色模式
+    // Discord 淺色模式
     background: '#ffffff',
-    color: '#24292f',
-    bubbleMe: '#0969da',
-    bubbleOther: '#f6f8fa',
-    input: '#ffffff',
-    border: '#d0d7de',
-    sidebarBg: '#f6f8fa',
-    sidebarHover: '#eaeef2',
-    buttonPrimary: '#1f883d',
-    buttonSecondary: '#f6f8fa',
-    buttonDanger: '#cf222e',
-    buttonSuccess: '#1f883d',
-    buttonInfo: '#0969da',
-    buttonWarning: '#bf8700',
+    color: '#2e3338',
+    bubbleMe: '#5865f2',
+    bubbleOther: '#f2f3f5',
+    input: '#e3e5e8',
+    border: '#e3e5e8',
+    sidebarBg: '#f2f3f5',
+    sidebarHover: '#e3e5e8',
+    buttonPrimary: '#5865f2',
+    buttonSecondary: '#4f545c',
+    buttonDanger: '#ed4245',
+    buttonSuccess: '#3ba55d',
+    buttonInfo: '#5865f2',
+    buttonWarning: '#faa61a',
     buttonText: '#ffffff',
     cardBg: '#ffffff',
-    headerBg: '#f6f8fa',
-    textSecondary: '#57606a',
-    divider: '#d0d7de',
-    scrollbar: '#d0d7de',
-    scrollbarThumb: '#959da5',
+    headerBg: '#f2f3f5',
+    textSecondary: '#4e5058',
+    divider: '#e3e5e8',
+    scrollbar: '#e3e5e8',
+    scrollbarThumb: '#c1c3c7',
     messageBg: '#ffffff',
-    inputBorder: '#d0d7de',
-    groupItemBg: '#ffffff',
-    groupItemHover: '#f6f8fa',
-    groupItemActive: '#ddf4ff',
-    tabActive: '#0969da',
-    tabInactive: '#f6f8fa',
+    inputBorder: '#e3e5e8',
+    groupItemBg: '#f2f3f5',
+    groupItemHover: '#e3e5e8',
+    groupItemActive: '#5865f2',
+    tabActive: '#5865f2',
+    tabInactive: '#b5bac1',
   };
 
   // 密碼強度提示
@@ -1913,19 +1913,19 @@ function App() {
         padding: 0;
       }
       button, .global-btn {
-        padding: 8px 20px !important;
-        border-radius: 32px !important;
+        padding: 8px 16px !important;
+        border-radius: 4px !important;
         border: none !important;
         background: ${themeStyles.buttonSecondary} !important;
         color: ${themeStyles.color} !important;
         cursor: pointer !important;
-        font-size: 16px !important;
+        font-size: 14px !important;
         font-weight: 500 !important;
-        transition: background 0.25s, color 0.2s !important;
-        box-shadow: ${isDarkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'} !important;
+        transition: background 0.17s ease, color 0.17s ease !important;
+        box-shadow: none !important;
       }
       button:hover, .global-btn:hover {
-        background: ${isDarkMode ? '#616161' : '#e0e0e0'} !important;
+        background: ${isDarkMode ? '#5d6269' : '#d7d9dc'} !important;
       }
       button:active, .global-btn:active {
         opacity: 0.8;
@@ -1954,7 +1954,14 @@ function App() {
       input, textarea, select {
         background: ${themeStyles.input} !important;
         color: ${themeStyles.color} !important;
-        border: 1px solid ${themeStyles.border} !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 10px !important;
+        font-size: 14px !important;
+      }
+      input:focus, textarea:focus, select:focus {
+        outline: none !important;
+        border: 1px solid ${themeStyles.buttonInfo} !important;
       }
     `;
     document.head.appendChild(style);
@@ -2419,25 +2426,38 @@ function App() {
 
   // 聊天室頁面
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
+    <div style={{ maxWidth: '100%', margin: 0, padding: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', display: 'flex', minHeight: '100vh', background: themeStyles.background, color: themeStyles.color }}>
       {/* 左側群組清單 */}
-      <div style={{ width: 240, marginRight: 20 }}>
-        <h3>我的群組</h3>
+      <div style={{ width: 240, marginRight: 0, background: themeStyles.sidebarBg, padding: '20px 8px', minHeight: '100vh', borderRight: `1px solid ${themeStyles.divider}` }}>
+        <h3 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', color: themeStyles.textSecondary, marginBottom: 8, paddingLeft: 8 }}>我的群組</h3>
         <ul style={{ padding: 0, listStyle: 'none' }}>
           {(Array.isArray(groups) ? groups : []).map((g, idx) => (
             <li key={g._id || idx} style={{ marginBottom: 4 }}>
               <button
                 style={{
                   width: '100%',
-                  background: currentGroup === g._id ? themeStyles.groupItemActive : themeStyles.groupItemBg,
-                  color: themeStyles.color,
-                  border: `1px solid ${themeStyles.border}`,
-                  borderRadius: 6,
+                  background: currentGroup === g._id ? themeStyles.groupItemActive : 'transparent',
+                  color: currentGroup === g._id ? '#fff' : themeStyles.color,
+                  border: 'none',
+                  borderRadius: 4,
                   padding: '8px 12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontWeight: currentGroup === g._id ? 600 : 500,
+                  transition: 'background 0.17s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (currentGroup !== g._id) {
+                    e.currentTarget.style.background = themeStyles.groupItemHover;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentGroup !== g._id) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
                 }}
                 onClick={() => setCurrentGroup(g._id)}
               >
@@ -2485,19 +2505,21 @@ function App() {
         }} className="button-secondary" style={{ marginTop: 16, width: '100%' }}>推播日誌查詢</button>
       </div>
       {/* 中間聊天區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>聊天室 {currentGroup && groups.find(g => g._id === currentGroup)?.name}</h2>
-          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="button-secondary" style={{ marginLeft: 8 }}>
-            {theme === 'light' ? '🌙 深色' : '☀️ 淺色'}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: themeStyles.messageBg }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${themeStyles.divider}`, background: themeStyles.headerBg, boxShadow: '0 1px 0 rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: themeStyles.color }}># {currentGroup && groups.find(g => g._id === currentGroup)?.name}</span>
+          </div>
+          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="button-secondary" style={{ marginLeft: 8, padding: '6px 12px', fontSize: 12 }}>
+            {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
         {/* 新增 Tab 切換 */}
         {currentGroup && (
-          <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}>
-            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>💬 聊天</button>
-            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>🖼️ 圖片/影片</button>
-            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : themeStyles.tabInactive, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}>📁 文件</button>
+          <div style={{ display: 'flex', gap: 4, padding: '0 16px', marginTop: 8 }}>
+            <button onClick={() => setActiveTab('chat')} className="button-secondary" style={{ background: activeTab === 'chat' ? themeStyles.tabActive : 'transparent', color: activeTab === 'chat' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>💬 聊天</button>
+            <button onClick={() => setActiveTab('media')} className="button-secondary" style={{ background: activeTab === 'media' ? themeStyles.tabActive : 'transparent', color: activeTab === 'media' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>🖼️ 圖片/影片</button>
+            <button onClick={() => setActiveTab('files')} className="button-secondary" style={{ background: activeTab === 'files' ? themeStyles.tabActive : 'transparent', color: activeTab === 'files' ? '#fff' : themeStyles.textSecondary, border: 'none', padding: '6px 12px', fontSize: 14, fontWeight: 500 }}>📁 文件</button>
           </div>
         )}
         {/* 根據 Tab 顯示內容 */}
@@ -2681,19 +2703,19 @@ function App() {
               </div>
             )}
             <div ref={messagesBoxRef} onScroll={handleScroll} style={{
-              border: `1px solid ${themeStyles.border}`,
+              border: 'none',
               minHeight: 300,
               padding: '16px',
               marginBottom: 10,
               height: 'calc(100vh - 280px)',
               overflowY: 'auto',
-              background: theme === 'dark' ? 'linear-gradient(to bottom, #0d1117, #161b22)' : 'linear-gradient(to bottom, #ffffff, #f6f8fa)',
+              background: themeStyles.messageBg,
               position: 'relative',
               width: '70vw',
               maxWidth: 1200,
               minWidth: 400,
-              borderRadius: 8,
-              boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)'
+              borderRadius: 0,
+              boxShadow: 'none'
             }}>
               {loadingMoreMessages && (
                 <div style={{ textAlign: 'center', color: '#888', marginBottom: 8 }}>載入中...</div>
