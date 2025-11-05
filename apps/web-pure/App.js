@@ -246,8 +246,114 @@ const globalBtnStyle = {
 }
 `}</style>
 
+// 圖片/影片牆組件
+function MediaWall({ groupId, uploadKey, isAdmin }) {
+  const [mediaMessages, setMediaMessages] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchMedia = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/group/${groupId}/messages`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        // 只顯示圖片和影片
+        const media = data.filter(m => m.type === 'image' || m.type === 'video');
+        setMediaMessages(media);
+      } catch (err) {
+        console.error('獲取媒體失敗:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (groupId) fetchMedia();
+  }, [groupId, uploadKey]);
+
+  if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>載入中...</div>;
+  if (mediaMessages.length === 0) return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有圖片或影片</div>;
+
+  return (
+    <div style={{ padding: 16, overflowY: 'auto', height: 'calc(100vh - 280px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+        {mediaMessages.map(msg => (
+          <div key={msg._id} style={{ position: 'relative', paddingBottom: '100%', background: '#000', borderRadius: 8, overflow: 'hidden', cursor: 'pointer' }}>
+            {msg.type === 'image' ? (
+              <img
+                src={msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
+                alt="圖片"
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                onClick={() => window.open(msg.url.startsWith('http') ? msg.url : API_URL + msg.url, '_blank')}
+              />
+            ) : (
+              <video
+                src={msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                onClick={() => window.open(msg.url.startsWith('http') ? msg.url : API_URL + msg.url, '_blank')}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 文件櫃組件
+function FileCabinet({ groupId, uploadKey, isAdmin }) {
+  const [fileMessages, setFileMessages] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/group/${groupId}/messages`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        // 只顯示文件
+        const files = data.filter(m => m.type === 'file');
+        setFileMessages(files);
+      } catch (err) {
+        console.error('獲取文件失敗:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (groupId) fetchFiles();
+  }, [groupId, uploadKey]);
+
+  if (loading) return <div style={{ padding: 20, textAlign: 'center' }}>載入中...</div>;
+  if (fileMessages.length === 0) return <div style={{ padding: 20, textAlign: 'center', color: '#888' }}>還沒有文件</div>;
+
+  return (
+    <div style={{ padding: 16, overflowY: 'auto', height: 'calc(100vh - 280px)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {fileMessages.map(msg => (
+          <div key={msg._id} style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 32 }}>📄</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{msg.filename || '未命名文件'}</div>
+              <div style={{ fontSize: 12, color: '#666' }}>{new Date(msg.createdAt).toLocaleString()}</div>
+            </div>
+            <a
+              href={msg.url.startsWith('http') ? msg.url : API_URL + msg.url}
+              download
+              style={{ padding: '6px 12px', background: '#5865f2', color: '#fff', borderRadius: 4, textDecoration: 'none', fontSize: 14 }}
+            >
+              下載
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  const [page, setPage] = useState('login'); // login | register | chat
+  const [page, setPage] = useState('login'); // login | register | chat</div></div>
   const [username, setUsername] = useState('');
   const [discriminator, setDiscriminator] = useState('');
   const [fullUsername, setFullUsername] = useState('');
@@ -2500,13 +2606,9 @@ function App() {
           <button onClick={joinGroup} className="button-primary" style={{ width: '100%' }}>加入群組</button>
         </div>
         <button onClick={logout} className="button-danger" style={{ marginTop: 16, width: '100%' }}>登出</button>
-        <button onClick={() => {
-          setShowPushLog(true);
-          fetchPushLogs();
-        }} className="button-secondary" style={{ marginTop: 16, width: '100%' }}>推播日誌查詢</button>
       </div>
       {/* 中間聊天區 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: themeStyles.messageBg, borderRadius: '8px', overflow: 'hidden', boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: themeStyles.sidebarBg, borderRadius: '8px', overflow: 'hidden', boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.08)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${themeStyles.divider}`, background: themeStyles.headerBg, boxShadow: isDarkMode ? 'none' : '0 1px 0 rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: themeStyles.color }}># {currentGroup && groups.find(g => g._id === currentGroup)?.name}</span>
@@ -3236,96 +3338,7 @@ function App() {
           </div>
         </div>
       )}
-      {/* 推播日誌查詢頁 Modal */}
-      {showPushLog && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: themeStyles.cardBg, color: themeStyles.color, padding: 24, borderRadius: 8, maxWidth: 900, width: '90%', maxHeight: '90vh', overflow: 'auto', position: 'relative', border: `1px solid ${themeStyles.border}` }}>
-            <h2 style={{ color: themeStyles.color }}>推播日誌查詢</h2>
-            <button onClick={() => setShowPushLog(false)} style={{ position: 'absolute', right: 32, top: 24 }}>關閉</button>
-            {/* 篩選條件 */}
-            <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {isAdmin && (
-                <input placeholder="userId" style={{ width: 120, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} value={pushLogUserId || ''} onChange={e => setPushLogUserId(e.target.value)} />
-              )}
-              <select value={pushLogType || ''} onChange={e => setPushLogType(e.target.value)} style={{ width: 120, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }}>
-                <option value="">全部型別</option>
-                <option value="mention">@提及</option>
-                <option value="announcement">公告</option>
-                <option value="message">一般訊息</option>
-                <option value="voice">語音</option>
-                <option value="file">檔案</option>
-                <option value="system">系統</option>
-              </select>
-              <input type="date" value={pushLogStart} onChange={e => setPushLogStart(e.target.value)} style={{ background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} />
-              <input type="date" value={pushLogEnd} onChange={e => setPushLogEnd(e.target.value)} style={{ background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, padding: 4, borderRadius: 4 }} />
-              <button onClick={() => { setPushLogSkip(0); fetchPushLogs(pushLogUserId, pushLogType, 0, pushLogLimit, pushLogStart, pushLogEnd); }}>查詢</button>
-            </div>
-            {/* 分頁按鈕 */}
-            <div style={{ marginBottom: 8 }}>
-              <button disabled={pushLogSkip === 0} onClick={() => { const newSkip = Math.max(0, pushLogSkip - pushLogLimit); setPushLogSkip(newSkip); fetchPushLogs(pushLogUserId, pushLogType, newSkip, pushLogLimit, pushLogStart, pushLogEnd); }}>上一頁</button>
-              <span style={{ margin: '0 12px' }}>第 {pushLogSkip / pushLogLimit + 1} 頁</span>
-              <button disabled={pushLogs.length < pushLogLimit} onClick={() => { const newSkip = pushLogSkip + pushLogLimit; setPushLogSkip(newSkip); fetchPushLogs(pushLogUserId, pushLogType, newSkip, pushLogLimit, pushLogStart, pushLogEnd); }}>下一頁</button>
-            </div>
-            {/* 統計圖表 */}
-            <div style={{ display: 'flex', gap: 32, marginBottom: 16 }}>
-              {/* 型別分布 Bar Chart */}
-              <div>
-                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>型別分布</div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', height: 80, gap: 8 }}>
-                  {pushLogStats.typeCount?.map(t => (
-                    <div key={t._id} style={{ textAlign: 'center' }}>
-                      <div style={{ background: '#4f8cff', width: 24, height: Math.max(8, t.count * 8), marginBottom: 4, borderRadius: 4 }}></div>
-                      <div style={{ fontSize: 12 }}>{t._id}</div>
-                      <div style={{ fontSize: 12 }}>{t.count}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* 成功率 Bar Chart */}
-              <div>
-                <div style={{ fontWeight: 'bold', marginBottom: 4 }}>成功/失敗</div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', height: 80, gap: 8 }}>
-                  {pushLogStats.statusCount?.map(s => (
-                    <div key={s._id} style={{ textAlign: 'center' }}>
-                      <div style={{ background: s._id === 'success' ? '#4caf50' : '#e53935', width: 24, height: Math.max(8, s.count * 8), marginBottom: 4, borderRadius: 4 }}></div>
-                      <div style={{ fontSize: 12 }}>{s._id}</div>
-                      <div style={{ fontSize: 12 }}>{s.count}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {pushLogLoading ? <div>載入中...</div> : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: themeStyles.sidebarBg, color: themeStyles.color }}>
-                    <th style={{ padding: 8, borderBottom: `1px solid ${themeStyles.border}` }}>時間</th>
-                    <th style={{ padding: 8, borderBottom: `1px solid ${themeStyles.border}` }}>型別</th>
-                    <th>標題</th>
-                    <th>內容</th>
-                    <th>狀態</th>
-                    <th>錯誤</th>
-                    <th>data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pushLogs.map(l => (
-                    <tr key={l._id} style={{ background: l.status === 'fail' ? (theme === 'dark' ? '#3d1f1f' : '#ffebee') : undefined, borderBottom: `1px solid ${themeStyles.border}` }}>
-                      <td style={{ padding: 8, color: themeStyles.color }}>{new Date(l.createdAt).toLocaleString()}</td>
-                      <td style={{ padding: 8, color: themeStyles.color }}>{l.type}</td>
-                      <td style={{ padding: 8, color: themeStyles.color }}>{l.title}</td>
-                      <td style={{ padding: 8, color: themeStyles.color }}>{l.body}</td>
-                      <td style={{ padding: 8, color: l.status === 'fail' ? '#e53935' : '#4caf50' }}>{l.status}</td>
-                      <td style={{ padding: 8, color: themeStyles.color }}>{l.error}</td>
-                      <td style={{ padding: 8 }}><pre style={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: themeStyles.color }}>{JSON.stringify(l.data)}</pre></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
+
       {showMention && mentionList.length > 0 && (
         <div style={{ position: 'absolute', background: themeStyles.cardBg, border: `1px solid ${themeStyles.border}`, borderRadius: 6, zIndex: 100, left: 0, top: -40, minWidth: 120, boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : '0 2px 8px rgba(0,0,0,0.1)' }}>
           {mentionList.map((u, i) => (
