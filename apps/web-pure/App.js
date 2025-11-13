@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
-import MediaWall from './components/MediaWall';
-import FileCabinet from './components/FileCabinet';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
