@@ -249,8 +249,8 @@ const globalBtnStyle = {
 // 消息緩存
 const messageCache = new Map();
 
-// 圖片/影片牆組件 - 使用 memo 優化
-const MediaWall = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
+// 圖片/影片牆組件
+function MediaWall({ groupId, uploadKey, isAdmin, messages }) {
   // 直接從傳入的 messages 過濾，避免重複請求
   const mediaMessages = React.useMemo(() => {
     return messages.filter(m => m.type === 'image' || m.type === 'video');
@@ -286,10 +286,10 @@ const MediaWall = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
       </div>
     </div>
   );
-});
+}
 
-// 文件櫃組件 - 使用 memo 優化
-const FileCabinet = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
+// 文件櫃組件
+function FileCabinet({ groupId, uploadKey, isAdmin, messages }) {
   // 直接從傳入的 messages 過濾，避免重複請求
   const fileMessages = React.useMemo(() => {
     return messages.filter(m => m.type === 'file');
@@ -321,7 +321,7 @@ const FileCabinet = React.memo(({ groupId, uploadKey, isAdmin, messages }) => {
       </div>
     </div>
   );
-});
+}
 
 function App() {
   const [page, setPage] = useState('login'); // login | register | chat</div></div>
