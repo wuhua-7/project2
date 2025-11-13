@@ -900,9 +900,9 @@ function App() {
   const fetchMessages = React.useCallback(async (groupId, before = '', append = false) => {
     if (!groupId || loadingMoreMessages) return;
     
-    // 檢查緩存
+    // 檢查緩存（添加安全檢查）
     const cacheKey = `${groupId}-${before}-${search}`;
-    if (!append && messageCache.has(cacheKey)) {
+    if (!append && messageCache instanceof Map && messageCache.has(cacheKey)) {
       const cached = messageCache.get(cacheKey);
       setMessages(cached.messages);
       setHasMoreMessages(cached.hasMore);
@@ -2826,8 +2826,8 @@ function App() {
               border: 'none',
               minHeight: 300,
               padding: window.innerWidth < 768 ? '8px' : '16px',
-              marginBottom: 10,
-              height: window.innerWidth < 768 ? 'calc(100vh - 400px)' : 'calc(100vh - 280px)',
+              marginBottom: 0,
+              height: window.innerWidth < 768 ? 'calc(100vh - 300px)' : 'calc(100vh - 200px)',
               overflowY: 'auto',
               background: themeStyles.messageBg,
               position: 'relative',
