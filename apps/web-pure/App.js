@@ -2584,7 +2584,7 @@ function App() {
             value={groupName}
             onChange={e => setGroupName(e.target.value)}
             placeholder="新群組名稱"
-            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}
+            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, boxSizing: 'border-box' }}
           />
           <button onClick={createGroup} className="button-primary" style={{ width: '100%' }}>建立群組</button>
         </div>
@@ -2593,7 +2593,7 @@ function App() {
             value={joinGroupId}
             onChange={e => setJoinGroupId(e.target.value)}
             placeholder="加入群組ID"
-            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}` }}
+            style={{ width: '100%', marginBottom: 4, padding: 8, borderRadius: 6, background: themeStyles.input, color: themeStyles.color, border: `1px solid ${themeStyles.border}`, boxSizing: 'border-box' }}
           />
           <button onClick={joinGroup} className="button-primary" style={{ width: '100%' }}>加入群組</button>
         </div>
@@ -3650,7 +3650,7 @@ function App() {
               {groupCallState.members.map(member => {
                 const isMuted = member.userId === userId ? groupCallState.isMuted : member.isMuted;
                 const isVideoOff = member.userId === userId ? groupCallState.isVideoOff : member.isVideoOff;
-                const isSpeaking = speakingUsers.has(member.userId) && !isMuted;
+                const isSpeaking = (speakingUsers instanceof Set && speakingUsers.has(member.userId)) && !isMuted;
 
                 return (
                   <div key={member.userId} style={{
