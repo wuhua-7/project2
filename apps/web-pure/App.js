@@ -2167,7 +2167,11 @@ function App() {
     try {
       const isVideo = groupCallState.type === 'video';
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
         video: isVideo
       });
 
@@ -2205,18 +2209,39 @@ function App() {
     if (localStream) {
       localStream.getTracks().forEach(track => {
         pc.addTrack(track, localStream);
-        console.log(`添加本地軌道: ${track.kind}`);
+        console.log(`添加本地軌道: ${track.kind}`, {
+          id: track.id,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState
+        });
       });
     }
 
     // 監聽遠程流
     pc.ontrack = (event) => {
       console.log(`收到遠程流: ${remoteUserId}`, event.streams[0]);
+      const stream = event.streams[0];
+      
+      // 檢查音頻軌道
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      console.log(`音頻軌道數量: ${audioTracks.length}, 視頻軌道數量: ${videoTracks.length}`);
+      
+      audioTracks.forEach((track, index) => {
+        console.log(`音頻軌道 ${index}:`, {
+          id: track.id,
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState
+        });
+      });
+      
       setGroupCallState(prev => ({
         ...prev,
         streams: {
           ...prev.streams,
-          [remoteUserId]: event.streams[0]
+          [remoteUserId]: stream
         }
       }));
     };
@@ -2296,7 +2321,10 @@ function App() {
     try {
       if (signal.type === 'offer') {
         await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-        const answer = await pc.createAnswer();
+        const answer = await pc.createAnswer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: groupCallState.type === 'video'
+        });
         await pc.setLocalDescription(answer);
 
         console.log(`發送 answer 給: ${fromUserId}`);
@@ -3844,6 +3872,8 @@ function App() {
                         ref={el => {
                           if (el && groupCallState.streams[member.userId] && member.userId !== userId) {
                             el.srcObject = groupCallState.streams[member.userId];
+                            // 確保音頻播放
+                            el.play().catch(err => console.error('音頻播放失敗:', err));
                           }
                         }}
                       />

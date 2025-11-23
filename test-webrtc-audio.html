@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC 音頻測試</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 5px;
+    }
+    .log {
+      margin: 20px 0;
+      padding: 15px;
+      background: #000;
+      color: #0f0;
+      border-radius: 5px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebRTC 音頻測試工具</h1>
+  
+  <div class="status">
+    <h3>狀態：<span id="status">未開始</span></h3>
+    <p>本地音頻軌道：<span id="localAudioStatus">-</span></p>
+    <p>遠程音頻軌道：<span id="remoteAudioStatus">-</span></p>
+  </div>
+
+  <div>
+    <button onclick="testMicrophone()">1. 測試麥克風</button>
+    <button onclick="testLocalPlayback()">2. 測試本地播放</button>
+    <button onclick="stopTest()">停止測試</button>
+  </div>
+
+  <div>
+    <audio id="localAudio" autoplay muted style="display: none;"></audio>
+    <audio id="remoteAudio" autoplay style="display: none;"></audio>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <script>
+    let localStream = null;
+    let audioContext = null;
+    let analyser = null;
+
+    function log(message) {
+      const logDiv = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      logDiv.innerHTML += `[${time}] ${message}<br>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    function updateStatus(status) {
+      document.getElementById('status').textContent = status;
+    }
+
+    async function testMicrophone() {
+      try {
+        log('開始測試麥克風...');
+        updateStatus('請求麥克風權限');
+
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+        log('✓ 成功獲取麥克風權限');
+        updateStatus('麥克風已啟用');
+
+        const audioTracks = localStream.getAudioTracks();
+        log(`音頻軌道數量: ${audioTracks.length}`);
+
+        audioTracks.forEach((track, index) => {
+          log(`軌道 ${index}: ${JSON.stringify({
+            id: track.id,
+            label: track.label,
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState
+          })}`);
+          
+          document.getElementById('localAudioStatus').textContent = 
+            `${track.label} (${track.readyState})`;
+        });
+
+        // 設置音頻分析器
+        setupAudioAnalyser(localStream);
+
+      } catch (error) {
+        log(`✗ 錯誤: ${error.name} - ${error.message}`);
+        updateStatus('麥克風測試失敗');
+      }
+    }
+
+    function setupAudioAnalyser(stream) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyser.fftSize = 256;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function detectAudio() {
+          if (!analyser) return;
+          
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          
+          if (average > 20) {
+            log(`檢測到聲音，音量: ${average.toFixed(2)}`);
+          }
+          
+          requestAnimationFrame(detectAudio);
+        }
+
+        detectAudio();
+        log('✓ 音頻分析器已啟動');
+      } catch (error) {
+        log(`✗ 音頻分析器錯誤: ${error.message}`);
+      }
+    }
+
+    async function testLocalPlayback() {
+      if (!localStream) {
+        log('✗ 請先測試麥克風');
+        return;
+      }
+
+      try {
+        log('開始測試本地播放（回音測試）...');
+        const audioElement = document.getElementById('remoteAudio');
+        audioElement.srcObject = localStream;
+        audioElement.muted = false; // 取消靜音以聽到自己的聲音
+        
+        await audioElement.play();
+        log('✓ 本地播放已啟動（你應該能聽到自己的聲音）');
+        updateStatus('播放中（回音測試）');
+        
+        document.getElementById('remoteAudioStatus').textContent = '播放中';
+      } catch (error) {
+        log(`✗ 播放錯誤: ${error.message}`);
+      }
+    }
+
+    function stopTest() {
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          track.stop();
+          log(`停止軌道: ${track.kind}`);
+        });
+        localStream = null;
+      }
+
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+        analyser = null;
+      }
+
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(el => {
+        el.srcObject = null;
+        el.pause();
+      });
+
+      log('✓ 測試已停止');
+      updateStatus('已停止');
+      document.getElementById('localAudioStatus').textContent = '-';
+      document.getElementById('remoteAudioStatus').textContent = '-';
+    }
+
+    // 頁面載入時的初始化
+    window.addEventListener('load', () => {
+      log('WebRTC 音頻測試工具已就緒');
+      log('瀏覽器: ' + navigator.userAgent);
+      log('支援 getUserMedia: ' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+    });
+  </script>
+</body>
+</html>
