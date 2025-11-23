@@ -1,74 +1,35 @@
-# 大型即時通訊專案結構
+# 逐行顯示網頁
 
-```
-project2/
-├── apps/                # 各平台應用程式
-│   ├── web/             # Web 前端 (React.js/Next.js)
-│   ├── mobile/          # 行動端 (React Native/Expo)
-│   └── desktop/         # 桌面端 (可選，Electron)
-├── packages/            # 共用模組
-│   ├── ui/              # 共用 UI 元件庫
-│   ├── utils/           # 共用工具函式
-│   ├── types/           # 共用型別定義
-│   └── api/             # 共用 API 請求邏輯
-├── backend/             # 後端主程式
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── tests/
-│   └── ...
-├── docs/                # 專案文件
-├── scripts/             # 自動化腳本
-└── README.md
+一個簡單的逐行顯示效果網頁，可以用來展示詩詞、公告或簡報內容。
+
+## 部署到 Vercel
+
+### 方法一：使用 Vercel CLI（推薦）
+
+1. 安裝 Vercel CLI：
+```bash
+npm install -g vercel
 ```
 
-## 目錄說明
-- **apps/**：各平台前端應用程式，web/mobile/desktop 可獨立開發與部署。
-- **packages/**：共用的 UI 元件、工具、型別、API 請求模組，方便多端共用。
-- **backend/**：Node.js/Express 主程式，建議採 MVC 架構，支援 Socket.IO。
-- **docs/**：專案說明、API 文件、設計規範等。
-- **scripts/**：自動化腳本（如一鍵啟動、部署、測試等）。
-
-## 初始化腳本（範例）
-
-### 1. 建立資料夾
-```sh
-mkdir -p apps/web apps/mobile apps/desktop
-mkdir -p packages/ui packages/utils packages/types packages/api
-mkdir -p backend/src/{controllers,models,routes,services,utils} backend/tests
-mkdir docs scripts
+2. 在專案目錄執行：
+```bash
+vercel
 ```
 
-### 2. 初始化各子專案
+3. 按照提示操作即可完成部署
 
-#### Web 前端
-```sh
-cd apps/web
-npx create-react-app .
-```
+### 方法二：使用 GitHub + Vercel 網站
 
-#### Mobile 前端
-```sh
-cd ../../mobile
-npx create-expo-app .
-```
+1. 將專案推送到 GitHub
+2. 前往 [vercel.com](https://vercel.com)
+3. 點擊「Import Project」
+4. 選擇你的 GitHub 倉庫
+5. 點擊「Deploy」
 
-#### Backend
-```sh
-cd ../../../backend
-npm init -y
-npm install express socket.io mongoose cors
-```
+## 本地預覽
 
-#### 共用模組（以 ui 為例）
-```sh
-cd ../packages/ui
-npm init -y
-```
+直接用瀏覽器開啟 `index.html` 即可。
 
----
+## 自訂內容
 
-> 你可以根據需求調整每個資料夾的內容與初始化方式。 
+編輯 `index.html` 中的 `lines` 陣列來修改顯示的內容。

@@ -402,6 +402,7 @@ function App() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState({ username: '', email: '', avatar: '', createdAt: '' });
+  const [viewingUserProfile, setViewingUserProfile] = useState(null); // 查看其他用戶的資料
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -2878,8 +2879,21 @@ function App() {
                       nodeRef={messageRefs.current[msg._id]}
                     >
                       <div ref={messageRefs.current[msg._id]} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', marginBottom: 10 }}>
-                        {/* 頭像 - 傳遞 senderInfo */}
-                        {renderAvatar(msg.sender, groupInfo, profile, isMe, msg.senderInfo, theme)}
+                        {/* 頭像 - 傳遞 senderInfo - 可點擊查看資料 */}
+                        <div 
+                          onClick={() => {
+                            if (!isMe) {
+                              setViewingUserProfile({
+                                username: msg.sender,
+                                avatar: getUserAvatar(msg.sender, groupInfo, profile, msg.senderInfo),
+                                ...msg.senderInfo
+                              });
+                            }
+                          }}
+                          style={{ cursor: isMe ? 'default' : 'pointer' }}
+                        >
+                          {renderAvatar(msg.sender, groupInfo, profile, isMe, msg.senderInfo, theme)}
+                        </div>
                         {/* 泡泡+已讀同一 flex row，順序根據 isMe 調整 */}
                         <div style={{ display: 'flex', flexDirection: isMe ? 'row' : 'row-reverse', alignItems: 'flex-end', gap: 6 }}>
                           {/* 泡泡本體在這裡渲染 */}
@@ -3580,6 +3594,42 @@ function App() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* 查看其他用戶資料彈窗 */}
+      {viewingUserProfile && (
+        <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setViewingUserProfile(null)}>
+          <div style={{ background: themeStyles.cardBg, borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400, position: 'relative', border: `1px solid ${themeStyles.border}` }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setViewingUserProfile(null)} style={{ position: 'absolute', top: 16, right: 16, fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: themeStyles.color }}>✕</button>
+            <h2 style={{ color: themeStyles.color, marginBottom: 24 }}>用戶資料</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <img
+                src={viewingUserProfile.avatar || 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg'}
+                alt="頭像"
+                style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${themeStyles.buttonInfo}` }}
+              />
+              <div style={{ textAlign: 'center', width: '100%' }}>
+                <div style={{ fontSize: 20, fontWeight: 600, color: themeStyles.color, marginBottom: 8 }}>
+                  {viewingUserProfile.username}
+                </div>
+                {viewingUserProfile.discriminator && (
+                  <div style={{ fontSize: 14, color: themeStyles.textSecondary, marginBottom: 8 }}>
+                    #{viewingUserProfile.discriminator}
+                  </div>
+                )}
+                {viewingUserProfile.email && (
+                  <div style={{ fontSize: 14, color: themeStyles.textSecondary, marginBottom: 8 }}>
+                    📧 {viewingUserProfile.email}
+                  </div>
+                )}
+                {viewingUserProfile.createdAt && (
+                  <div style={{ fontSize: 12, color: themeStyles.textSecondary, marginTop: 16 }}>
+                    加入時間：{new Date(viewingUserProfile.createdAt).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
