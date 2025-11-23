@@ -446,6 +446,7 @@ function App() {
   };
 
   const audioChunksRef = useRef([]);
+  const localStreamRef = useRef(null); // 用於保存最新的 localStream
 
   // 請求通知權限
   useEffect(() => {
@@ -711,12 +712,17 @@ function App() {
           const newMembers = members.filter(m => !existingIds.has(m.userId));
 
           // 為每個現有成員創建 WebRTC 連接（作為發起者）
-          if (prev.localStream) {
+          const currentLocalStream = localStreamRef.current;
+          if (currentLocalStream) {
+            console.log('為現有成員創建 WebRTC 連接，本地流:', currentLocalStream);
             members.forEach(member => {
               if (member.userId !== userId) {
-                createPeerConnection(member.userId, true, prev.localStream);
+                console.log(`創建連接到: ${member.username} (${member.userId})`);
+                createPeerConnection(member.userId, true, currentLocalStream);
               }
             });
+          } else {
+            console.warn('⚠️ localStreamRef.current 尚未準備好，無法創建連接');
           }
 
           return {
@@ -2175,9 +2181,18 @@ function App() {
         video: isVideo
       });
 
+      console.log('✓ 成功獲取本地媒體流', {
+        audioTracks: stream.getAudioTracks().length,
+        videoTracks: stream.getVideoTracks().length
+      });
+
+      // 保存到 ref，避免閉包問題
+      localStreamRef.current = stream;
+
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
 
+      // 先更新狀態，確保 localStream 已設置
       setGroupCallState(prev => {
         // 檢查用戶是否已在成員列表中
         const isAlreadyInCall = prev.members.some(m => m.userId === userId);
@@ -2191,8 +2206,11 @@ function App() {
         };
       });
 
-      socket.emit('group-call:join', { groupId: currentGroup, userId, type: groupCallState.type });
-      console.log('加入群組通話', { groupId: currentGroup, type: groupCallState.type });
+      // 延遲發送 join 事件，確保狀態已更新
+      setTimeout(() => {
+        socket.emit('group-call:join', { groupId: currentGroup, userId, type: groupCallState.type });
+        console.log('發送加入群組通話請求', { groupId: currentGroup, type: groupCallState.type });
+      }, 100);
     } catch (error) {
       console.error('無法獲取媒體設備:', error);
       alert('無法訪問麥克風或攝像頭，請檢查權限設置');
@@ -2310,7 +2328,15 @@ function App() {
 
     // 如果還沒有連接，創建一個
     if (!pc && signal.type === 'offer') {
-      pc = await createPeerConnection(fromUserId, false, groupCallState.localStream);
+      // 使用 ref 獲取最新的 localStream
+      const currentLocalStream = localStreamRef.current;
+      if (currentLocalStream) {
+        console.log('使用 localStreamRef 創建連接');
+        pc = await createPeerConnection(fromUserId, false, currentLocalStream);
+      } else {
+        console.error('⚠️ localStreamRef.current 不存在，無法創建連接');
+        return;
+      }
     }
 
     if (!pc) {
