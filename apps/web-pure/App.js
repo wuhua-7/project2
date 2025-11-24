@@ -2284,13 +2284,27 @@ function App() {
         });
       });
       
-      setGroupCallState(prev => ({
-        ...prev,
-        streams: {
-          ...prev.streams,
-          [remoteUserId]: stream
-        }
-      }));
+      setGroupCallState(prev => {
+        const newState = {
+          ...prev,
+          streams: {
+            ...prev.streams,
+            [remoteUserId]: stream
+          }
+        };
+        console.log('更新 groupCallState.streams:', Object.keys(newState.streams));
+        return newState;
+      });
+      
+      // 強制觸發音頻播放
+      setTimeout(() => {
+        const audioElements = document.querySelectorAll('audio');
+        audioElements.forEach(el => {
+          if (el.srcObject && !el.muted) {
+            el.play().catch(err => console.error('延遲播放失敗:', err));
+          }
+        });
+      }, 500);
     };
 
     // 監聽 ICE candidate
@@ -2310,10 +2324,25 @@ function App() {
 
     // 監聽連接狀態
     pc.onconnectionstatechange = () => {
-      console.log(`連接狀態 ${remoteUserId}:`, pc.connectionState);
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        console.log(`連接失敗，嘗試重新連接: ${remoteUserId}`);
+      console.log(`🔗 連接狀態 ${remoteUserId}:`, pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        console.log(`✓ 與 ${remoteUserId} 連接成功`);
+      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.error(`✗ 與 ${remoteUserId} 連接失敗`);
       }
+    };
+
+    // 監聽 ICE 連接狀態
+    pc.oniceconnectionstatechange = () => {
+      console.log(`🧊 ICE 連接狀態 ${remoteUserId}:`, pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed') {
+        console.error(`✗ ICE 連接失敗 ${remoteUserId}`);
+      }
+    };
+
+    // 監聽 ICE gathering 狀態
+    pc.onicegatheringstatechange = () => {
+      console.log(`📡 ICE gathering 狀態 ${remoteUserId}:`, pc.iceGatheringState);
     };
 
     // 保存連接
@@ -2407,6 +2436,15 @@ function App() {
   const setupAudioDetection = (stream, targetUserId) => {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // 恢復音頻上下文（如果被暫停）
+      if (audioContext.state === 'suspended') {
+        console.log('音頻上下文被暫停，嘗試恢復...');
+        audioContext.resume().then(() => {
+          console.log('✓ 音頻上下文已恢復');
+        });
+      }
+      
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
