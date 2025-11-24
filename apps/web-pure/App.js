@@ -2121,7 +2121,21 @@ function App() {
   const handleGroupAudioCall = async () => {
     if (!socket || !currentGroup) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }, 
+        video: false 
+      });
+
+      console.log('✓ 發起者成功獲取音頻流', {
+        audioTracks: stream.getAudioTracks().length
+      });
+
+      // 保存到 ref
+      localStreamRef.current = stream;
 
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
@@ -2146,7 +2160,22 @@ function App() {
   const handleGroupVideoCall = async () => {
     if (!socket || !currentGroup) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }, 
+        video: true 
+      });
+
+      console.log('✓ 發起者成功獲取音視頻流', {
+        audioTracks: stream.getAudioTracks().length,
+        videoTracks: stream.getVideoTracks().length
+      });
+
+      // 保存到 ref
+      localStreamRef.current = stream;
 
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
@@ -3895,11 +3924,29 @@ function App() {
                     {groupCallState.streams[member.userId] && (
                       <audio
                         autoPlay
+                        playsInline
                         ref={el => {
                           if (el && groupCallState.streams[member.userId] && member.userId !== userId) {
+                            console.log(`設置音頻流: ${member.username}`, groupCallState.streams[member.userId]);
                             el.srcObject = groupCallState.streams[member.userId];
+                            el.volume = 1.0; // 確保音量最大
+                            el.muted = false; // 確保不靜音
+                            
+                            // 檢查音頻軌道
+                            const audioTracks = groupCallState.streams[member.userId].getAudioTracks();
+                            console.log(`${member.username} 的音頻軌道:`, audioTracks.map(t => ({
+                              id: t.id,
+                              enabled: t.enabled,
+                              muted: t.muted,
+                              readyState: t.readyState
+                            })));
+                            
                             // 確保音頻播放
-                            el.play().catch(err => console.error('音頻播放失敗:', err));
+                            el.play().then(() => {
+                              console.log(`✓ ${member.username} 的音頻開始播放`);
+                            }).catch(err => {
+                              console.error(`✗ ${member.username} 音頻播放失敗:`, err);
+                            });
                           }
                         }}
                       />
