@@ -800,6 +800,42 @@ function App() {
     };
   }, [socket, currentGroup, userId, groupCallState.visible]);
 
+  // 監控音頻流的變化並強制播放
+  useEffect(() => {
+    if (groupCallState.visible && Object.keys(groupCallState.streams).length > 0) {
+      console.log('📊 當前音頻流狀態:', {
+        成員數量: groupCallState.members.length,
+        流數量: Object.keys(groupCallState.streams).length,
+        流列表: Object.keys(groupCallState.streams)
+      });
+
+      // 延遲檢查並強制播放
+      const timer = setTimeout(() => {
+        const audioElements = document.querySelectorAll('audio');
+        console.log(`找到 ${audioElements.length} 個音頻元素`);
+        
+        audioElements.forEach((el, i) => {
+          if (el.srcObject) {
+            const tracks = el.srcObject.getAudioTracks();
+            console.log(`Audio ${i}:`, {
+              srcObject: !!el.srcObject,
+              audioTracks: tracks.length,
+              paused: el.paused,
+              muted: el.muted,
+              volume: el.volume
+            });
+            
+            if (el.paused) {
+              el.play().catch(err => console.error(`Audio ${i} 播放失敗:`, err));
+            }
+          }
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [groupCallState.streams, groupCallState.visible]);
+
   // WebRTC 信令處理
   useEffect(() => {
     if (!socket) return;
@@ -4043,32 +4079,43 @@ function App() {
                       )}
                     </div>
 
-                    {groupCallState.streams[member.userId] && (
+                    {/* 音頻元素 - 為每個成員創建（除了自己） */}
+                    {member.userId !== userId && (
                       <audio
+                        key={`audio-${member.userId}`}
                         autoPlay
                         playsInline
                         ref={el => {
-                          if (el && groupCallState.streams[member.userId] && member.userId !== userId) {
-                            console.log(`設置音頻流: ${member.username}`, groupCallState.streams[member.userId]);
-                            el.srcObject = groupCallState.streams[member.userId];
-                            el.volume = 1.0; // 確保音量最大
-                            el.muted = false; // 確保不靜音
-                            
-                            // 檢查音頻軌道
-                            const audioTracks = groupCallState.streams[member.userId].getAudioTracks();
-                            console.log(`${member.username} 的音頻軌道:`, audioTracks.map(t => ({
-                              id: t.id,
-                              enabled: t.enabled,
-                              muted: t.muted,
-                              readyState: t.readyState
-                            })));
-                            
-                            // 確保音頻播放
-                            el.play().then(() => {
-                              console.log(`✓ ${member.username} 的音頻開始播放`);
-                            }).catch(err => {
-                              console.error(`✗ ${member.username} 音頻播放失敗:`, err);
-                            });
+                          if (el) {
+                            const stream = groupCallState.streams[member.userId];
+                            if (stream) {
+                              console.log(`🔊 設置音頻流: ${member.username} (${member.userId})`, stream);
+                              el.srcObject = stream;
+                              el.volume = 1.0;
+                              el.muted = false;
+                              
+                              // 檢查音頻軌道
+                              const audioTracks = stream.getAudioTracks();
+                              console.log(`${member.username} 的音頻軌道:`, audioTracks.map(t => ({
+                                id: t.id,
+                                enabled: t.enabled,
+                                muted: t.muted,
+                                readyState: t.readyState
+                              })));
+                              
+                              // 強制播放
+                              setTimeout(() => {
+                                el.play().then(() => {
+                                  console.log(`✓ ${member.username} 的音頻開始播放`);
+                                }).catch(err => {
+                                  console.error(`✗ ${member.username} 音頻播放失敗:`, err);
+                                  // 重試
+                                  setTimeout(() => el.play().catch(() => {}), 1000);
+                                });
+                              }, 100);
+                            } else {
+                              console.warn(`⚠️ ${member.username} 沒有音頻流`);
+                            }
                           }
                         }}
                       />
