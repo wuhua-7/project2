@@ -718,25 +718,34 @@ function App() {
 
     // 接收現有成員列表（當加入通話時）
     socket.on('group-call:existing-members', async ({ groupId, members }) => {
+      console.log('📥 收到 existing-members 事件', { groupId, currentGroup, members });
+      
       if (groupId === currentGroup) {
-        console.log('收到現有成員列表:', members);
+        console.log('✓ groupId 匹配，處理現有成員列表:', members);
         setGroupCallState(prev => {
           // 合併現有成員，避免重複
           const existingIds = new Set(prev.members.map(m => m.userId));
           const newMembers = members.filter(m => !existingIds.has(m.userId));
+          console.log('新成員:', newMembers);
 
           // 為每個現有成員創建 WebRTC 連接（作為發起者）
           const currentLocalStream = localStreamRef.current;
+          console.log('localStreamRef.current 狀態:', {
+            exists: !!currentLocalStream,
+            audioTracks: currentLocalStream?.getAudioTracks().length,
+            videoTracks: currentLocalStream?.getVideoTracks().length
+          });
+          
           if (currentLocalStream) {
-            console.log('為現有成員創建 WebRTC 連接，本地流:', currentLocalStream);
+            console.log('✓ 為現有成員創建 WebRTC 連接');
             members.forEach(member => {
               if (member.userId !== userId) {
-                console.log(`創建連接到: ${member.username} (${member.userId})`);
+                console.log(`🔗 創建連接到: ${member.username} (${member.userId})`);
                 createPeerConnection(member.userId, true, currentLocalStream);
               }
             });
           } else {
-            console.warn('⚠️ localStreamRef.current 尚未準備好，無法創建連接');
+            console.error('❌ localStreamRef.current 不存在，無法創建連接！');
           }
 
           return {
@@ -2262,9 +2271,17 @@ function App() {
   };
 
   const handleJoinGroupCall = async () => {
-    if (!socket || !currentGroup) return;
+    console.log('🚀 開始加入群組通話', { socket: !!socket, currentGroup, groupCallState });
+    
+    if (!socket || !currentGroup) {
+      console.error('❌ 無法加入通話: socket 或 currentGroup 不存在');
+      return;
+    }
+    
     try {
       const isVideo = groupCallState.type === 'video';
+      console.log(`📹 請求媒體權限: ${isVideo ? '視訊+音訊' : '僅音訊'}`);
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
