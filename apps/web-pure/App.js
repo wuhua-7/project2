@@ -7,9 +7,22 @@ import './MessageAnimations.css';
 import { API_URL } from './config';
 import { checkServerStatus, waitForServer } from './utils/serverCheck.js';
 
-// 調試信息 - 強制清除緩存
+// 應用版本號 - 用於強制刷新緩存
+const APP_VERSION = '6.0.0'; // WebRTC 音頻修復 + 頭像修復 + 靜麥同步
 
-console.log('App.js 載入 (v5.0)，API_URL:', API_URL);
+console.log(`App.js 載入 (v${APP_VERSION})，API_URL:`, API_URL);
+
+// 版本檢查 - 如果版本不匹配則清除緩存
+if (typeof window !== 'undefined') {
+  const storedVersion = localStorage.getItem('app_version');
+  if (storedVersion !== APP_VERSION) {
+    console.log(`版本更新: ${storedVersion} -> ${APP_VERSION}，清除緩存...`);
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('app_version', APP_VERSION);
+    console.log('✓ 緩存已清除');
+  }
+}
 
 // 強制清除任何可能的 localhost 緩存
 if (typeof window !== 'undefined') {
@@ -749,6 +762,19 @@ function App() {
       }
     });
 
+    // 接收其他成員的靜麥狀態
+    socket.on('group-call:mute-status', ({ groupId, userId: mutedUserId, isMuted }) => {
+      if (groupId === currentGroup) {
+        console.log(`收到靜麥狀態更新: ${mutedUserId} - ${isMuted ? '已靜麥' : '未靜麥'}`);
+        setGroupCallState(prev => ({
+          ...prev,
+          members: prev.members.map(m =>
+            m.userId === mutedUserId ? { ...m, isMuted } : m
+          )
+        }));
+      }
+    });
+
     // 通話狀態更新
     socket.on('group-call:status', ({ groupId, status, type, memberCount }) => {
       setOngoingGroupCalls(prev => {
@@ -770,6 +796,7 @@ function App() {
       socket.off('group-call:signal');
       socket.off('group-call:ended');
       socket.off('group-call:status');
+      socket.off('group-call:mute-status');
     };
   }, [socket, currentGroup, userId, groupCallState.visible]);
 
@@ -2551,7 +2578,18 @@ function App() {
       const audioTrack = groupCallState.localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
-        setGroupCallState(prev => ({ ...prev, isMuted: !audioTrack.enabled }));
+        const newMutedState = !audioTrack.enabled;
+        setGroupCallState(prev => ({ ...prev, isMuted: newMutedState }));
+        
+        // 廣播靜麥狀態給其他成員
+        if (socket && currentGroup) {
+          socket.emit('group-call:mute-status', {
+            groupId: currentGroup,
+            userId,
+            isMuted: newMutedState
+          });
+          console.log(`廣播靜麥狀態: ${newMutedState}`);
+        }
       }
     }
   };

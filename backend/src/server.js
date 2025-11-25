@@ -398,6 +398,17 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 靜麥狀態廣播
+  socket.on('group-call:mute-status', ({ groupId, userId, isMuted }) => {
+    console.log('group-call:mute-status', { groupId, userId, isMuted });
+    // 廣播給群組內所有其他成員
+    socket.to(groupId).emit('group-call:mute-status', {
+      groupId,
+      userId,
+      isMuted
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
