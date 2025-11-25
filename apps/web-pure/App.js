@@ -2456,11 +2456,22 @@ function App() {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        if (average > 20) { // 音量閾值
-          setSpeakingUsers(prev => new Set(prev).add(targetUserId));
+        // 降低閾值，讓檢測更靈敏
+        if (average > 10) { // 音量閾值從 20 降到 10
+          setSpeakingUsers(prev => {
+            const newSet = new Set(prev);
+            if (!newSet.has(targetUserId)) {
+              console.log(`🎤 ${targetUserId} 開始說話，音量: ${average.toFixed(2)}`);
+            }
+            newSet.add(targetUserId);
+            return newSet;
+          });
         } else {
           setSpeakingUsers(prev => {
             const newSet = new Set(prev);
+            if (newSet.has(targetUserId)) {
+              console.log(`🔇 ${targetUserId} 停止說話`);
+            }
             newSet.delete(targetUserId);
             return newSet;
           });
@@ -3831,8 +3842,10 @@ function App() {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    border: member.userId === userId ? `2px solid ${themeStyles.buttonInfo}` : '2px solid transparent',
-                    position: 'relative'
+                    border: isSpeaking ? '3px solid #00ff00' : (member.userId === userId ? `2px solid ${themeStyles.buttonInfo}` : '2px solid transparent'),
+                    boxShadow: isSpeaking ? '0 0 20px rgba(0, 255, 0, 0.5)' : 'none',
+                    position: 'relative',
+                    transition: 'all 0.2s ease'
                   }}>
                     {/* 視訊或頭像顯示 */}
                     <div style={{ position: 'relative', width: '100%', marginBottom: 8 }}>
@@ -3954,9 +3967,24 @@ function App() {
                       )}
                     </div>
 
-                    <div style={{ fontSize: 14, fontWeight: 600, color: themeStyles.color, textAlign: 'center' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: themeStyles.color, textAlign: 'center', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
                       {member.username}
                       {member.userId === userId && ' (你)'}
+                      {isSpeaking && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          color: '#00ff00',
+                          fontSize: 12
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                          </svg>
+                          說話中
+                        </span>
+                      )}
                     </div>
 
                     {groupCallState.streams[member.userId] && (
