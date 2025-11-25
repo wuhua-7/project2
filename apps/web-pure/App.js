@@ -2284,6 +2284,12 @@ function App() {
         });
       });
       
+      // 為遠程流設置音頻檢測
+      if (audioTracks.length > 0) {
+        console.log(`為遠程用戶 ${remoteUserId} 設置音頻檢測`);
+        setupAudioDetection(stream, remoteUserId);
+      }
+      
       setGroupCallState(prev => {
         const newState = {
           ...prev,
@@ -2435,7 +2441,10 @@ function App() {
   // 音頻檢測函數
   const setupAudioDetection = (stream, targetUserId) => {
     try {
+      console.log(`🎧 開始為 ${targetUserId} 設置音頻檢測`);
+      
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log(`音頻上下文狀態: ${audioContext.state}`);
       
       // 恢復音頻上下文（如果被暫停）
       if (audioContext.state === 'suspended') {
@@ -2451,6 +2460,8 @@ function App() {
 
       microphone.connect(analyser);
       analyser.fftSize = 256;
+      
+      console.log(`✓ 音頻檢測已設置完成: ${targetUserId}`);
 
       const detectSound = () => {
         analyser.getByteFrequencyData(dataArray);
