@@ -303,7 +303,8 @@ io.on('connection', (socket) => {
       groupId, 
       type, 
       from: socket.user.id,
-      fromUsername: socket.user.username 
+      fromUsername: socket.user.username,
+      fromAvatar: socket.user.avatar
     });
     
     // 廣播通話狀態（活躍）
@@ -322,7 +323,8 @@ io.on('connection', (socket) => {
     socket.to(groupId).emit('group-call:member-joined', { 
       groupId, 
       userId,
-      username: socket.user.username 
+      username: socket.user.username,
+      avatar: socket.user.avatar
     });
     
     // 獲取當前房間內的所有成員並發送給新加入者
@@ -334,7 +336,8 @@ io.on('connection', (socket) => {
         if (memberSocket && memberSocket.user && memberSocket.user.id !== userId) {
           existingMembers.push({
             userId: memberSocket.user.id,
-            username: memberSocket.user.username
+            username: memberSocket.user.username,
+            avatar: memberSocket.user.avatar
           });
         }
       }

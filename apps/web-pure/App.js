@@ -642,7 +642,7 @@ function App() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('group-call:invite', ({ groupId, type, from, fromUsername }) => {
+    socket.on('group-call:invite', ({ groupId, type, from, fromUsername, fromAvatar }) => {
       if (groupId === currentGroup && from !== userId) {
         // 顯示通話通知，而不是直接打開視窗
         setCallNotification({ groupId, type, from, fromUsername });
@@ -650,22 +650,23 @@ function App() {
         // 設置通話狀態但不顯示視窗
         setGroupCallState({
           type,
-          members: [{ userId: from, username: fromUsername }],
+          members: [{ userId: from, username: fromUsername, avatar: fromAvatar }],
           streams: {},
           visible: false, // 不自動打開視窗
           isCaller: false,
           groupId
         });
-        console.log('收到群組通話邀請', { groupId, type, from, fromUsername });
+        console.log('收到群組通話邀請', { groupId, type, from, fromUsername, fromAvatar });
       }
     });
 
-    socket.on('group-call:member-joined', ({ groupId, userId: joinedUserId, username: joinedUsername }) => {
+    socket.on('group-call:member-joined', ({ groupId, userId: joinedUserId, username: joinedUsername, avatar: joinedAvatar }) => {
       if (groupId === currentGroup) {
         setGroupCallState(prev => {
           console.log('收到 member-joined 事件', {
             joinedUserId,
             joinedUsername,
+            joinedAvatar,
             currentMembers: prev.members.map(m => ({ userId: m.userId, username: m.username }))
           });
 
@@ -676,14 +677,14 @@ function App() {
             return prev;
           }
 
-          console.log('✅ 添加新成員到通話', { joinedUserId, joinedUsername });
+          console.log('✅ 添加新成員到通話', { joinedUserId, joinedUsername, joinedAvatar });
 
           // 不為新成員創建連接（他們會作為發起者創建連接）
           // 我們只需等待他們的 offer
 
           return {
             ...prev,
-            members: [...prev.members, { userId: joinedUserId, username: joinedUsername }]
+            members: [...prev.members, { userId: joinedUserId, username: joinedUsername, avatar: joinedAvatar }]
           };
         });
       }
@@ -2142,7 +2143,7 @@ function App() {
 
       setGroupCallState({
         type: 'audio',
-        members: [{ userId, username }],
+        members: [{ userId, username, avatar: profile.avatar }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2182,7 +2183,7 @@ function App() {
 
       setGroupCallState({
         type: 'video',
-        members: [{ userId, username }],
+        members: [{ userId, username, avatar: profile.avatar }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2227,7 +2228,7 @@ function App() {
         const isAlreadyInCall = prev.members.some(m => m.userId === userId);
         return {
           ...prev,
-          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username }],
+          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username, avatar: profile.avatar }],
           streams: { ...prev.streams, [userId]: stream },
           localStream: stream,
           visible: true, // 顯示通話視窗
@@ -3909,7 +3910,13 @@ function App() {
                           )}
                           {/* 頭像 */}
                           <img
-                            src={getUserAvatar(member.username, groupInfo, profile)}
+                            src={
+                              member.avatar 
+                                ? (member.avatar.startsWith('http') ? member.avatar : API_URL + member.avatar)
+                                : (member.userId === userId && profile.avatar
+                                    ? (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar)
+                                    : 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg')
+                            }
                             alt={member.username}
                             style={{
                               width: 60,
@@ -3921,8 +3928,8 @@ function App() {
                               zIndex: 1
                             }}
                             onError={(e) => {
-                              console.error('頭像加載失敗:', member.username, getUserAvatar(member.username, groupInfo, profile));
-                              e.target.style.display = 'none';
+                              console.error('頭像加載失敗:', member.username, member.avatar);
+                              e.target.src = 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg';
                               if (e.target.nextSibling) {
                                 e.target.nextSibling.style.display = 'flex';
                               }
