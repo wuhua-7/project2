@@ -2213,9 +2213,11 @@ function App() {
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
 
+      console.log('設置群組通話狀態 - profile:', profile);
+      
       setGroupCallState({
         type: 'audio',
-        members: [{ userId, username, avatar: profile.avatar }],
+        members: [{ userId, username, avatar: profile.avatar || null }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2253,9 +2255,11 @@ function App() {
       // 設置音頻檢測
       setupAudioDetection(stream, userId);
 
+      console.log('設置群組視訊通話狀態 - profile:', profile);
+      
       setGroupCallState({
         type: 'video',
-        members: [{ userId, username, avatar: profile.avatar }],
+        members: [{ userId, username, avatar: profile.avatar || null }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2306,9 +2310,11 @@ function App() {
       setGroupCallState(prev => {
         // 檢查用戶是否已在成員列表中
         const isAlreadyInCall = prev.members.some(m => m.userId === userId);
+        console.log('加入通話 - 添加自己到成員列表, profile:', profile);
+        
         return {
           ...prev,
-          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username, avatar: profile.avatar }],
+          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username, avatar: profile.avatar || null }],
           streams: { ...prev.streams, [userId]: stream },
           localStream: stream,
           visible: true, // 顯示通話視窗
