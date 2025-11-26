@@ -2554,8 +2554,8 @@ function App() {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        // 降低閾值，讓檢測更靈敏
-        if (average > 10) { // 音量閾值從 20 降到 10
+        // 進一步降低閾值，讓檢測更靈敏
+        if (average > 5) { // 音量閾值從 10 降到 5
           setSpeakingUsers(prev => {
             const newSet = new Set(prev);
             if (!newSet.has(targetUserId)) {
