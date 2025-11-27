@@ -453,10 +453,23 @@ function App() {
   // WebRTC 配置
   const rtcConfig = {
     iceServers: [
+      // Google STUN servers
       { urls: 'stun:stun.l.google.com:19302' },
-      // TURN server example（請填入你的 coturn 資訊）
-      // { urls: 'turn:your.turn.server:3478', username: 'user', credential: 'pass' }
-    ]
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      // 公共 TURN 服務器（臨時使用，生產環境應該使用自己的）
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10
   };
 
   const audioChunksRef = useRef([]);
