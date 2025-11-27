@@ -2580,8 +2580,8 @@ function App() {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
-        // 進一步降低閾值，讓檢測更靈敏
-        if (average > 5) { // 音量閾值從 10 降到 5
+        // 極低閾值，讓檢測非常靈敏
+        if (average > 3) { // 音量閾值從 5 降到 3
           setSpeakingUsers(prev => {
             const newSet = new Set(prev);
             if (!newSet.has(targetUserId)) {
@@ -4033,13 +4033,21 @@ function App() {
                           )}
                           {/* 頭像 */}
                           <img
-                            src={
-                              member.avatar 
+                            src={(() => {
+                              const avatarUrl = member.avatar 
                                 ? (member.avatar.startsWith('http') ? member.avatar : API_URL + member.avatar)
                                 : (member.userId === userId && profile.avatar
                                     ? (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar)
-                                    : 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg')
-                            }
+                                    : 'https://res.cloudinary.com/dvnuhsvtd/image/upload/v1754576538/chat-app/default-avatar.jpg');
+                              
+                              console.log(`頭像 URL for ${member.username}:`, {
+                                memberAvatar: member.avatar,
+                                profileAvatar: profile.avatar,
+                                finalUrl: avatarUrl
+                              });
+                              
+                              return avatarUrl;
+                            })()}
                             alt={member.username}
                             style={{
                               width: 60,
