@@ -448,6 +448,7 @@ function App() {
   const [ongoingGroupCalls, setOngoingGroupCalls] = useState(new Map()); // 記錄正在進行的群組通話
   const [callNotification, setCallNotification] = useState(null); // 通話通知 { groupId, type, from, fromUsername }
   const [peerConnections, setPeerConnections] = useState(new Map()); // WebRTC peer 連接管理 Map<userId, RTCPeerConnection>
+  const pendingIceCandidates = useRef(new Map()); // 緩存待處理的 ICE candidates Map<userId, Array<candidate>>
 
   // WebRTC 配置
   const rtcConfig = {
@@ -2477,6 +2478,16 @@ function App() {
 
     let pc = peerConnections.get(fromUserId);
 
+    // 如果是 ICE candidate 但 peer 連接還不存在，緩存它
+    if (!pc && signal.type === 'ice-candidate') {
+      console.log(`⏳ peer 連接尚未建立，緩存 ICE candidate: ${fromUserId}`);
+      if (!pendingIceCandidates.current.has(fromUserId)) {
+        pendingIceCandidates.current.set(fromUserId, []);
+      }
+      pendingIceCandidates.current.get(fromUserId).push(signal.candidate);
+      return;
+    }
+
     // 如果還沒有連接，創建一個
     if (!pc && signal.type === 'offer') {
       // 使用 ref 獲取最新的 localStream
@@ -2484,6 +2495,21 @@ function App() {
       if (currentLocalStream) {
         console.log('使用 localStreamRef 創建連接');
         pc = await createPeerConnection(fromUserId, false, currentLocalStream);
+        
+        // 處理緩存的 ICE candidates
+        if (pendingIceCandidates.current.has(fromUserId)) {
+          const candidates = pendingIceCandidates.current.get(fromUserId);
+          console.log(`📦 處理 ${candidates.length} 個緩存的 ICE candidates`);
+          for (const candidate of candidates) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              console.log(`✓ 添加緩存的 ICE candidate 成功`);
+            } catch (err) {
+              console.error(`✗ 添加緩存的 ICE candidate 失敗:`, err);
+            }
+          }
+          pendingIceCandidates.current.delete(fromUserId);
+        }
       } else {
         console.error('⚠️ localStreamRef.current 不存在，無法創建連接');
         return;
@@ -2491,7 +2517,7 @@ function App() {
     }
 
     if (!pc) {
-      console.error(`找不到 peer 連接: ${fromUserId}`);
+      console.error(`❌ 找不到 peer 連接: ${fromUserId}`);
       return;
     }
 
