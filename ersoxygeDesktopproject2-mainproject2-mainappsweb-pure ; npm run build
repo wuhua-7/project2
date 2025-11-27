@@ -1,0 +1,10 @@
+[33ma7a3f0c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: 整個背景改為淺灰色 - 主容器背景改為sidebarBg - body和html背景改為sidebarBg - 統一整個應用的背景色
+[33m59e6bfb[m fix: 完全移除推播日誌功能和添加手機響應式支持 - 刪除所有推播日誌相關狀態和函數 - 添加手機響應式佈局 - 手機版改為垂直佈局 - 優化聊天框在手機上的顯示 - 添加媒體查詢支持
+[33m2bee8de[m perf: 大幅優化性能和響應速度 - 使用React.memo優化MediaWall和FileCabinet組件 - 添加消息緩存機制減少重複API請求 - 使用useMemo和useCallback優化渲染 - 圖片添加lazy loading - 視頻添加preload metadata - 優化fetchMessages使用緩存
+[33m47887b8[m feat: UI優化和媒體展示功能 - 右側背景改為淺灰色 - 移除推播日誌功能 - 實現IG風格的圖片網格展示 - 實現文件列表展示 - MediaWall和FileCabinet組件
+[33m7482850[m feat: 優化UI細節和淺色模式 - 淺色模式按鈕改為白色帶陰影 - 按鈕圓角從4px增加到8px - 添加獨立的深淺色切換按鈕 - 四周添加8px間距 - 側邊欄和聊天區添加圓角和陰影
+[33m430ea7c[m feat: 完整實現Discord風格UI設計 - 使用Discord官方配色方案 - 修改按鈕圓角為4px - 左側邊欄Discord風格 - 頂部標題欄帶陰影 - 標籤按鈕透明背景 - 移除不必要的邊框和陰影
+[33m99821c4[m feat: 擴大聊天室框框尺寸 - 聊天框寬度從50vw增加到70vw - 高度改為自適應視窗高度 - 主容器從900px增加到1400px - 左側群組列表從180px增加到240px
+[33m8f3e2f9[m feat: 完整覆蓋整個頁面的深色模式 - 設置 body 和 html 背景色 - 修復所有按鈕、輸入框樣式 - 確保全局一致的深色主題
+[33me15e435[m fix: 修復 themeStyles 未定義錯誤 - renderAvatar 函數添加 theme 參數
+[33m080c575[m feat: 完整實現Discord風格深色模式 - 修復所有彈窗、輸入框、按鈕的深色模式支持 - 優化會員中心、群組資訊、推播日誌等彈窗 - 統一使用themeStyles確保一致性

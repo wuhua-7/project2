@@ -1,5 +1,0 @@
-[33m5769c8f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m feat: WebRTC群組通話、已讀回執、用戶系統優化 - 實現Mesh架構的P2P群組音視頻通話 - 修復頭像顯示和已讀回執功能 - 添加username#discriminator用戶系統 - 實現群組通話通知和即時同步
-[33ma689e88[m fix: add message read event listener to display read receipts
-[33m5e74c02[m fix: resolve avatar display issues for messages and read receipts
-[33mbb7917b[m feat: implement WebRTC
-[33mb2bf4d7[m fix: resolve group call visibility, auto-end, JWT, and avatar issues
