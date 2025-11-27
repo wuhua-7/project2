@@ -2216,9 +2216,14 @@ function App() {
 
       console.log('設置群組通話狀態 - profile:', profile);
       
+      // 處理頭像 URL - 如果是相對路徑則加上 API_URL
+      const avatarUrl = profile.avatar 
+        ? (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar)
+        : null;
+      
       setGroupCallState({
         type: 'audio',
-        members: [{ userId, username, avatar: profile.avatar || null }],
+        members: [{ userId, username, avatar: avatarUrl }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2258,9 +2263,14 @@ function App() {
 
       console.log('設置群組視訊通話狀態 - profile:', profile);
       
+      // 處理頭像 URL - 如果是相對路徑則加上 API_URL
+      const avatarUrl = profile.avatar 
+        ? (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar)
+        : null;
+      
       setGroupCallState({
         type: 'video',
-        members: [{ userId, username, avatar: profile.avatar || null }],
+        members: [{ userId, username, avatar: avatarUrl }],
         streams: { [userId]: stream },
         visible: true,
         isCaller: true,
@@ -2313,9 +2323,14 @@ function App() {
         const isAlreadyInCall = prev.members.some(m => m.userId === userId);
         console.log('加入通話 - 添加自己到成員列表, profile:', profile);
         
+        // 處理頭像 URL - 如果是相對路徑則加上 API_URL
+        const avatarUrl = profile.avatar 
+          ? (profile.avatar.startsWith('http') ? profile.avatar : API_URL + profile.avatar)
+          : null;
+        
         return {
           ...prev,
-          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username, avatar: profile.avatar || null }],
+          members: isAlreadyInCall ? prev.members : [...prev.members, { userId, username, avatar: avatarUrl }],
           streams: { ...prev.streams, [userId]: stream },
           localStream: stream,
           visible: true, // 顯示通話視窗
