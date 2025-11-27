@@ -4150,6 +4150,53 @@ function App() {
 
             {/* 控制按鈕 */}
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {/* 診斷按鈕 */}
+              <button
+                style={{ background: '#ff9800', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
+                onClick={() => {
+                  console.log('=== 🔍 通話診斷報告 ===');
+                  console.log('成員數量:', groupCallState.members.length);
+                  console.log('成員列表:', groupCallState.members);
+                  console.log('流數量:', Object.keys(groupCallState.streams).length);
+                  console.log('流列表:', Object.keys(groupCallState.streams));
+                  
+                  const audioElements = document.querySelectorAll('audio');
+                  console.log('音頻元素數量:', audioElements.length);
+                  
+                  audioElements.forEach((el, i) => {
+                    console.log(`\nAudio ${i}:`);
+                    console.log('  srcObject:', !!el.srcObject);
+                    console.log('  paused:', el.paused);
+                    console.log('  muted:', el.muted);
+                    console.log('  volume:', el.volume);
+                    
+                    if (el.srcObject) {
+                      const tracks = el.srcObject.getAudioTracks();
+                      console.log('  音頻軌道數量:', tracks.length);
+                      tracks.forEach((t, j) => {
+                        console.log(`  軌道 ${j}:`, {
+                          enabled: t.enabled,
+                          muted: t.muted,
+                          readyState: t.readyState
+                        });
+                      });
+                      
+                      // 嘗試播放
+                      el.play().then(() => {
+                        console.log(`  ✓ Audio ${i} 播放成功`);
+                      }).catch(err => {
+                        console.error(`  ✗ Audio ${i} 播放失敗:`, err.message);
+                      });
+                    }
+                  });
+                  
+                  console.log('\n=== 診斷完成 ===');
+                  alert('診斷完成！請查看控制台輸出');
+                }}
+              >
+                🔍 診斷
+              </button>
+              
               {!groupCallState.isCaller && groupCallState.members.length > 0 && !groupCallState.members.some(m => m.userId === userId) && (
                 <button
                   style={{ background: themeStyles.buttonInfo, color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', cursor: 'pointer', fontSize: 16, fontWeight: 600 }}
