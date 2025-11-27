@@ -1,8 +1,9 @@
-// API 配置 - 支援環境變數 (v4.0 - 強制修正 URL)
+// API 配置 - 支援環境變數 (v6.1 - 修復後端連接)
 const getApiUrl = () => {
-  // 強制使用正確的 URL，忽略環境變數
+  // 使用正確的 Render 後端 URL
   const apiUrl = 'https://project2-g1cl.onrender.com';
-  console.log('使用雲端後端 URL (v4.0 - 強制修正):', apiUrl);
+  console.log('使用雲端後端 URL (v6.1):', apiUrl);
+  console.log('如果連接失敗，請檢查 Render 後端是否正常運行');
   
   // 終極緩存清除 (v4.0)
   if (typeof window !== 'undefined') {
