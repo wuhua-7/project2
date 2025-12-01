@@ -743,9 +743,10 @@ function App() {
           console.log('新成員:', newMembers);
 
           // 為每個現有成員創建 WebRTC 連接（作為發起者）
-          const currentLocalStream = localStreamRef.current;
-          console.log('localStreamRef.current 狀態:', {
-            exists: !!currentLocalStream,
+          const currentLocalStream = localStreamRef.current || prev.localStream;
+          console.log('本地流狀態:', {
+            hasLocalStreamRef: !!localStreamRef.current,
+            hasStateLocalStream: !!prev.localStream,
             audioTracks: currentLocalStream?.getAudioTracks().length,
             videoTracks: currentLocalStream?.getVideoTracks().length
           });
@@ -759,7 +760,8 @@ function App() {
               }
             });
           } else {
-            console.error('❌ localStreamRef.current 不存在，無法創建連接！');
+            console.error('❌ 無法獲取本地流，無法創建連接！');
+            console.error('請確保已成功加入通話並獲取媒體權限');
           }
 
           return {
@@ -2520,9 +2522,32 @@ function App() {
     if (!pc && signal.type === 'offer') {
       // 使用 ref 獲取最新的 localStream
       const currentLocalStream = localStreamRef.current;
-      if (currentLocalStream) {
-        console.log('使用 localStreamRef 創建連接');
-        pc = await createPeerConnection(fromUserId, false, currentLocalStream);
+      
+      // 檢查是否在通話中
+      const isInCall = groupCallState.visible && groupCallState.localStream;
+      
+      if (!currentLocalStream && !isInCall) {
+        console.error('⚠️ localStreamRef.current 不存在且不在通話中，無法創建連接');
+        console.log('當前狀態:', {
+          hasLocalStreamRef: !!localStreamRef.current,
+          groupCallVisible: groupCallState.visible,
+          hasLocalStream: !!groupCallState.localStream,
+          groupId: groupCallState.groupId
+        });
+        return;
+      }
+      
+      // 使用 localStreamRef 或 groupCallState.localStream
+      const streamToUse = currentLocalStream || groupCallState.localStream;
+      
+      if (streamToUse) {
+        console.log('✓ 使用本地流創建連接', {
+          source: currentLocalStream ? 'localStreamRef' : 'groupCallState',
+          audioTracks: streamToUse.getAudioTracks().length,
+          videoTracks: streamToUse.getVideoTracks().length
+        });
+        
+        pc = await createPeerConnection(fromUserId, false, streamToUse);
         
         // 處理緩存的 ICE candidates
         if (pendingIceCandidates.current.has(fromUserId)) {
@@ -2539,7 +2564,7 @@ function App() {
           pendingIceCandidates.current.delete(fromUserId);
         }
       } else {
-        console.error('⚠️ localStreamRef.current 不存在，無法創建連接');
+        console.error('⚠️ 無法獲取本地流，無法創建連接');
         return;
       }
     }
